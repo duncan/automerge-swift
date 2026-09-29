@@ -2,8 +2,9 @@ name: test
 on:
   push:
     branches: [main]
+  # Run for pull requests into any branch, so each PR in a stack of dependent
+  # PRs is tested, not only the one based on main.
   pull_request:
-    branches: [main]
 
 jobs:
   automerge-dependencies:

@@ -1,4 +1,3 @@
-use super::UniffiCustomTypeConverter;
 use automerge as am;
 
 pub struct Cursor(Vec<u8>);
@@ -20,17 +19,4 @@ impl From<am::Cursor> for Cursor {
     }
 }
 
-impl UniffiCustomTypeConverter for Cursor {
-    type Builtin = Vec<u8>;
-
-    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self>
-    where
-        Self: Sized,
-    {
-        Ok(Self(val))
-    }
-
-    fn from_custom(obj: Self) -> Self::Builtin {
-        obj.0
-    }
-}
+uniffi::custom_newtype!(Cursor, Vec<u8>);

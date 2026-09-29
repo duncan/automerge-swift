@@ -15,7 +15,7 @@ required-features = ["uniffi/cli"]
 [dependencies]
 automerge = { version = "0.7.2", default-features = false, features = ["wasm"] }
 thiserror = "1.0.38"
-uniffi = "0.28.2"
+uniffi = "0.32.2"
 
 [build-dependencies]
-uniffi = { version = "0.28.2", features = ["build"] }
+uniffi = { version = "0.32.2", features = ["build"] }

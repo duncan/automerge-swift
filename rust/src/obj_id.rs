@@ -1,4 +1,3 @@
-use super::UniffiCustomTypeConverter;
 use automerge as am;
 
 #[derive(Debug, Clone)]
@@ -34,20 +33,7 @@ pub fn root() -> ObjId {
     am::ROOT.into()
 }
 
-impl UniffiCustomTypeConverter for ObjId {
-    type Builtin = Vec<u8>;
-
-    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self>
-    where
-        Self: Sized,
-    {
-        Ok(Self(val))
-    }
-
-    fn from_custom(obj: Self) -> Self::Builtin {
-        obj.0
-    }
-}
+uniffi::custom_newtype!(ObjId, Vec<u8>);
 
 #[cfg(test)]
 mod tests {

@@ -58,12 +58,20 @@ rm -rf "${XCFRAMEWORK_FOLDER}"
 
 mkdir -p "${SWIFT_FOLDER}"
 echo "▸ Generate Swift Scaffolding Code"
-cargo run --manifest-path "$RUST_FOLDER/Cargo.toml"  \
-    --features=uniffi/cli \
-    --bin uniffi-bindgen generate \
-    "$RUST_FOLDER/src/automerge.udl" \
-    --language swift \
-    --out-dir "${SWIFT_FOLDER}"
+# uniffi-bindgen runs `cargo metadata` to locate the crate, so it has to be
+# invoked from within the Rust folder rather than via --manifest-path.
+# --no-format keeps the output independent of whichever swift-format happens
+# to be installed (and some toolchain versions hang formatting this file).
+(
+    cd "$RUST_FOLDER"
+    cargo run \
+        --features=uniffi/cli \
+        --bin uniffi-bindgen generate \
+        src/automerge.udl \
+        --language swift \
+        --no-format \
+        --out-dir "${SWIFT_FOLDER}"
+)
 
 echo "▸ Building for x86_64-apple-ios"
 CFLAGS_x86_64_apple_ios="-target x86_64-apple-ios" \

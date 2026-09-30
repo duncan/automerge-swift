@@ -115,3 +115,38 @@ struct MarkBoundsTests {
         #expect(marks == [Mark(start: 1, end: 5, name: "bold", value: .Boolean(true))])
     }
 }
+
+@Suite("Cursors at earlier heads")
+struct CursorAtHeadsTests {
+    /// The cursor used to be placed by comparing the position with the text's current length, so a
+    /// position that was inside the text at `heads` became the end if the text had since shrunk.
+    @Test("A cursor at earlier heads points at the character that was there, after the text shrinks")
+    func cursorAfterTextShrinks() throws {
+        let doc = Document()
+        let text = try doc.putObject(obj: .ROOT, key: "text", ty: .Text)
+        try doc.spliceText(obj: text, start: 0, delete: 0, value: "hello world")
+        let heads = doc.heads()
+        try doc.spliceText(obj: text, start: 0, delete: 6)
+
+        // "w" of "world".
+        let cursor = try doc.cursor(obj: text, position: 6, heads: heads)
+        let thenPosition = try doc.position(obj: text, cursor: cursor, heads: heads)
+        let nowPosition = try doc.position(obj: text, cursor: cursor)
+        #expect(thenPosition == 6)
+        #expect(nowPosition == 0)
+    }
+
+    /// A position past the end of the text at `heads`, but inside it now, is the end at `heads`.
+    @Test("A cursor at earlier heads past the end of the text then is at the end, after the text grows")
+    func cursorAfterTextGrows() throws {
+        let doc = Document()
+        let text = try doc.putObject(obj: .ROOT, key: "text", ty: .Text)
+        try doc.spliceText(obj: text, start: 0, delete: 0, value: "hello")
+        let heads = doc.heads()
+        try doc.spliceText(obj: text, start: 5, delete: 0, value: " world")
+
+        let cursor = try doc.cursor(obj: text, position: 8, heads: heads)
+        let thenPosition = try doc.position(obj: text, cursor: cursor, heads: heads)
+        #expect(thenPosition == 5)
+    }
+}

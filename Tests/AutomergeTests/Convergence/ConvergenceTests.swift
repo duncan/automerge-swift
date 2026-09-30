@@ -125,15 +125,6 @@ struct ConvergenceTests {
         try expectConverged([merged, shuffled], seed: seed, editor: editor)
     }
 
-    /// Seeds whose replicas end up with different conflicting values for a key, though the same
-    /// visible values, because of a merge bug in automerge 0.7.2. See
-    /// `KnownAutomergeBugTests.mergeOrderDoesNotChangeConflicts`.
-    ///
-    /// Running more seeds with `AUTOMERGE_CONVERGENCE_SEEDS` finds more of these: about one seed in ten.
-    /// About one in a thousand (seed 513, for one) differs in a visible value too, which
-    /// `KnownAutomergeBugTests.mergeOrderDoesNotChangeWinner` reproduces.
-    static let seedsWithStaleConflicts: Set<UInt64> = [38]
-
     /// Checks that every document has the same heads, and so the same changes, and the same contents,
     /// and that each still has those contents after a save and reload. The order `getHistory()` lists
     /// changes in depends on the order they arrived, so it isn't compared.
@@ -166,12 +157,7 @@ struct ConvergenceTests {
                 conflictsDiffer = true
             }
         }
-        guard conflictsDiffer else { return }
-        if Self.seedsWithStaleConflicts.contains(seed) {
-            withKnownIssue("automerge 0.7.2 can keep overwritten values in a key's conflicts after a merge") {
-                Issue.record("conflicting values differ between documents or after reloading")
-            }
-        } else {
+        if conflictsDiffer {
             try record(
                 "conflicting values differ between documents or after reloading",
                 expected: expected, actual: nil, seed: seed, editor: editor, sourceLocation: sourceLocation

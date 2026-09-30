@@ -29,8 +29,9 @@ format change.
 - `exemplar` is `interop/exemplar` from the `automerge/automerge` repository, a document made by
   another implementation.
 - `exemplar.export.json` is the output of `automerge export exemplar` from the Rust CLI, as given in
-  that repository's `interop/README.md`. It's the one expected output here that comes from another
-  implementation rather than from this package.
+  that repository's `interop/README.md`, reformatted the way `JSONEncoder` writes it with the values
+  unchanged. It's the one expected output here that comes from another implementation rather than
+  from this package, so the regeneration command leaves it alone.
 - `exemplar.json` is the typed dump, written by the regeneration command above.
 
 ## `upstream/`

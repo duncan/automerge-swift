@@ -1,50 +1,52 @@
 {
-  "history": [
+  "history" : [
     {
-      "actor": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
-      "deps": 0,
-      "message": "build",
-      "time": 1704067200
+      "actor" : "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "deps" : 0,
+      "message" : "build",
+      "time" : 1704067200
     },
     {
-      "actor": "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
-      "deps": 1,
-      "message": "edit",
-      "time": 1704067260
+      "actor" : "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "deps" : 1,
+      "message" : "edit",
+      "time" : 1704067260
     }
   ],
-  "root": {
-    "map": {
-      "config": {
-        "map": {
-          "items": {
-            "list": [
+  "root" : {
+    "map" : {
+      "config" : {
+        "map" : {
+          "items" : {
+            "list" : [
               {
-                "str": "ALPHA"
+                "str" : "ALPHA"
               },
               {
-                "map": {
-                  "id": {
-                    "uint": 7
+                "map" : {
+                  "id" : {
+                    "uint" : 7
                   },
-                  "note": {
-                    "text": {
-                      "marks": [],
-                      "value": "nested text"
+                  "note" : {
+                    "text" : {
+                      "marks" : [
+
+                      ],
+                      "value" : "nested text"
                     }
                   },
-                  "tags": {
-                    "list": [
+                  "tags" : {
+                    "list" : [
                       {
-                        "str": "x"
+                        "str" : "x"
                       },
                       {
-                        "list": [
+                        "list" : [
                           {
-                            "int": 1
+                            "int" : 1
                           },
                           {
-                            "null": null
+                            "null" : null
                           }
                         ]
                       }
@@ -53,31 +55,37 @@
                 }
               },
               {
-                "str": "gamma"
+                "str" : "gamma"
               },
               {
-                "str": "epsilon"
+                "str" : "epsilon"
               },
               {
-                "int": -1
+                "int" : -1
               }
             ]
           },
-          "name": {
-            "str": "corpus"
+          "name" : {
+            "str" : "corpus"
           }
         }
       },
-      "empty_list": {
-        "list": []
+      "empty_list" : {
+        "list" : [
+
+        ]
       },
-      "empty_map": {
-        "map": {}
+      "empty_map" : {
+        "map" : {
+
+        }
       },
-      "empty_text": {
-        "text": {
-          "marks": [],
-          "value": ""
+      "empty_text" : {
+        "text" : {
+          "marks" : [
+
+          ],
+          "value" : ""
         }
       }
     }

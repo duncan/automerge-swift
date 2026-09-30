@@ -1,85 +1,38 @@
 import Automerge
 import Foundation
 
-/// A JSON value with a canonical text form: keys sorted, two-space indentation, and every
-/// non-ASCII character written literally. The corpus renders JSON itself, rather than through
-/// Foundation, so that expected files compare byte for byte on every platform.
-indirect enum CanonicalJSON: Equatable {
+/// A JSON value, written out by `JSONEncoder` with sorted keys and pretty printing. Its output is
+/// the same byte for byte on macOS and WASM, so expected files compare as text on every platform.
+indirect enum JSONValue: Equatable, Encodable {
     case null
     case bool(Bool)
     case int(Int64)
     case uint(UInt64)
-    /// A number written exactly as given.
-    case number(String)
+    case double(Double)
     case string(String)
-    case array([CanonicalJSON])
-    case object([String: CanonicalJSON])
+    case array([JSONValue])
+    case object([String: JSONValue])
 
     var rendered: String {
-        var output = ""
-        render(into: &output, indent: "")
-        return output + "\n"
+        get throws {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.sortedKeys, .prettyPrinted, .withoutEscapingSlashes]
+            return try String(decoding: encoder.encode(self), as: UTF8.self)
+        }
     }
 
-    private func render(into output: inout String, indent: String) {
-        let inner = indent + "  "
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
         switch self {
-        case .null:
-            output += "null"
-        case let .bool(value):
-            output += value ? "true" : "false"
-        case let .int(value):
-            output += String(value)
-        case let .uint(value):
-            output += String(value)
-        case let .number(value):
-            output += value
-        case let .string(value):
-            output += Self.quoted(value)
-        case let .array(values):
-            guard !values.isEmpty else {
-                output += "[]"
-                return
-            }
-            output += "[\n"
-            for (index, value) in values.enumerated() {
-                output += inner
-                value.render(into: &output, indent: inner)
-                output += index == values.count - 1 ? "\n" : ",\n"
-            }
-            output += indent + "]"
-        case let .object(members):
-            guard !members.isEmpty else {
-                output += "{}"
-                return
-            }
-            output += "{\n"
-            let keys = members.keys.sorted { Array($0.utf8).lexicographicallyPrecedes(Array($1.utf8)) }
-            for (index, key) in keys.enumerated() {
-                output += inner + Self.quoted(key) + ": "
-                members[key]!.render(into: &output, indent: inner)
-                output += index == keys.count - 1 ? "\n" : ",\n"
-            }
-            output += indent + "}"
+        case .null: try container.encodeNil()
+        case let .bool(value): try container.encode(value)
+        case let .int(value): try container.encode(value)
+        case let .uint(value): try container.encode(value)
+        case let .double(value): try container.encode(value)
+        case let .string(value): try container.encode(value)
+        case let .array(values): try container.encode(values)
+        case let .object(members): try container.encode(members)
         }
-    }
-
-    private static func quoted(_ string: String) -> String {
-        var output = "\""
-        for scalar in string.unicodeScalars {
-            switch scalar {
-            case "\"": output += "\\\""
-            case "\\": output += "\\\\"
-            case "\n": output += "\\n"
-            case "\r": output += "\\r"
-            case "\t": output += "\\t"
-            case _ where scalar.value < 0x20:
-                output += "\\u00" + hex(UInt8(scalar.value))
-            default:
-                output.unicodeScalars.append(scalar)
-            }
-        }
-        return output + "\""
     }
 }
 
@@ -94,10 +47,6 @@ func hex<Bytes: Sequence>(_ bytes: Bytes) -> String where Bytes.Element == UInt8
     return output
 }
 
-private func hex(_ byte: UInt8) -> String {
-    hex([byte])
-}
-
 /// A typed, lossless dump of a document's current state and change history, used as the expected
 /// output for the golden corpus.
 ///
@@ -107,14 +56,14 @@ private func hex(_ byte: UInt8) -> String {
 /// infinities have a form. Where a map key or list element has conflicting values, the dump lists
 /// every value along with the one that wins.
 enum CorpusDump {
-    static func json(for doc: Document) throws -> CanonicalJSON {
+    static func json(for doc: Document) throws -> JSONValue {
         .object([
             "root": try object(.ROOT, type: .Map, in: doc),
             "history": .array(doc.getHistory().map { hash in
                 guard let change = doc.change(hash: hash) else { return .null }
                 return .object([
                     "actor": .string(change.actorId.description.lowercased()),
-                    "message": change.message.map(CanonicalJSON.string) ?? .null,
+                    "message": change.message.map(JSONValue.string) ?? .null,
                     "time": .int(Int64(change.timestamp.timeIntervalSince1970)),
                     "deps": .int(Int64(change.deps.count)),
                 ])
@@ -125,14 +74,14 @@ enum CorpusDump {
     /// The untyped JSON that `automerge export` from the Rust CLI produces, for comparing with
     /// output from that tool. Counters and timestamps become plain numbers, text becomes a string,
     /// and bytes become an array of numbers.
-    static func exportJSON(for doc: Document) throws -> CanonicalJSON {
+    static func exportJSON(for doc: Document) throws -> JSONValue {
         try export(.Object(.ROOT, .Map), in: doc)
     }
 
-    private static func export(_ value: Value, in doc: Document) throws -> CanonicalJSON {
+    private static func export(_ value: Value, in doc: Document) throws -> JSONValue {
         switch value {
         case let .Object(id, .Map):
-            var members: [String: CanonicalJSON] = [:]
+            var members: [String: JSONValue] = [:]
             for (key, value) in try doc.mapEntries(obj: id) {
                 members[key] = try export(value, in: doc)
             }
@@ -147,7 +96,7 @@ enum CorpusDump {
             case let .String(string): return .string(string)
             case let .Uint(uint): return .uint(uint)
             case let .Int(int): return .int(int)
-            case let .F64(double): return .number(double.description)
+            case let .F64(double): return .double(double)
             case let .Counter(count): return .int(count)
             case let .Timestamp(date): return .int(Int64((date.timeIntervalSince1970 * 1000).rounded()))
             case let .Boolean(bool): return .bool(bool)
@@ -157,10 +106,10 @@ enum CorpusDump {
         }
     }
 
-    private static func object(_ id: ObjId, type: ObjType, in doc: Document) throws -> CanonicalJSON {
+    private static func object(_ id: ObjId, type: ObjType, in doc: Document) throws -> JSONValue {
         switch type {
         case .Map:
-            var members: [String: CanonicalJSON] = [:]
+            var members: [String: JSONValue] = [:]
             for key in doc.keys(obj: id) {
                 members[key] = try entry(
                     winner: doc.get(obj: id, key: key),
@@ -170,7 +119,7 @@ enum CorpusDump {
             }
             return .object(["map": .object(members)])
         case .List:
-            var elements: [CanonicalJSON] = []
+            var elements: [JSONValue] = []
             for index in 0 ..< doc.length(obj: id) {
                 try elements.append(entry(
                     winner: doc.get(obj: id, index: index),
@@ -194,16 +143,16 @@ enum CorpusDump {
         }
     }
 
-    private static func entry(winner: Value?, all: Set<Value>, in doc: Document) throws -> CanonicalJSON {
+    private static func entry(winner: Value?, all: Set<Value>, in doc: Document) throws -> JSONValue {
         guard let winner else { return .null }
         let dumpedWinner = try value(winner, in: doc)
         guard all.count > 1 else { return dumpedWinner }
         let dumpedAll = try all.map { try value($0, in: doc) }
-            .sorted { $0.rendered.utf8.lexicographicallyPrecedes($1.rendered.utf8) }
+            .sorted { try $0.rendered.utf8.lexicographicallyPrecedes($1.rendered.utf8) }
         return .object(["conflict": .object(["winner": dumpedWinner, "values": .array(dumpedAll)])])
     }
 
-    private static func value(_ value: Value, in doc: Document) throws -> CanonicalJSON {
+    private static func value(_ value: Value, in doc: Document) throws -> JSONValue {
         switch value {
         case let .Object(id, type):
             return try object(id, type: type, in: doc)
@@ -212,7 +161,7 @@ enum CorpusDump {
         }
     }
 
-    private static func scalar(_ value: ScalarValue) -> CanonicalJSON {
+    private static func scalar(_ value: ScalarValue) -> JSONValue {
         switch value {
         case let .Bytes(data): return .object(["bytes": .string(hex(data))])
         case let .String(string): return .object(["str": .string(string)])

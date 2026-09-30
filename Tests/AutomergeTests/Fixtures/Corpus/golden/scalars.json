@@ -1,91 +1,91 @@
 {
-  "history": [
+  "history" : [
     {
-      "actor": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
-      "deps": 0,
-      "message": "scalars",
-      "time": 1704067200
+      "actor" : "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "deps" : 0,
+      "message" : "scalars",
+      "time" : 1704067200
     },
     {
-      "actor": "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
-      "deps": 1,
-      "message": "increment the counter",
-      "time": 1704067260
+      "actor" : "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+      "deps" : 1,
+      "message" : "increment the counter",
+      "time" : 1704067260
     }
   ],
-  "root": {
-    "map": {
-      "bool_false": {
-        "bool": false
+  "root" : {
+    "map" : {
+      "bool_false" : {
+        "bool" : false
       },
-      "bool_true": {
-        "bool": true
+      "bool_true" : {
+        "bool" : true
       },
-      "bytes": {
-        "bytes": "856f4a83"
+      "bytes" : {
+        "bytes" : "856f4a83"
       },
-      "bytes_empty": {
-        "bytes": ""
+      "bytes_empty" : {
+        "bytes" : ""
       },
-      "counter": {
-        "counter": 7
+      "counter" : {
+        "counter" : 7
       },
-      "f64_infinity": {
-        "f64": "inf"
+      "f64_infinity" : {
+        "f64" : "inf"
       },
-      "f64_max": {
-        "f64": "1.7976931348623157e+308"
+      "f64_max" : {
+        "f64" : "1.7976931348623157e+308"
       },
-      "f64_nan": {
-        "f64": "nan"
+      "f64_nan" : {
+        "f64" : "nan"
       },
-      "f64_negative_infinity": {
-        "f64": "-inf"
+      "f64_negative_infinity" : {
+        "f64" : "-inf"
       },
-      "f64_negative_zero": {
-        "f64": "-0.0"
+      "f64_negative_zero" : {
+        "f64" : "-0.0"
       },
-      "f64_pi": {
-        "f64": "3.14159267"
+      "f64_pi" : {
+        "f64" : "3.14159267"
       },
-      "f64_subnormal": {
-        "f64": "5e-324"
+      "f64_subnormal" : {
+        "f64" : "5e-324"
       },
-      "int_max": {
-        "int": 9223372036854775807
+      "int_max" : {
+        "int" : 9223372036854775807
       },
-      "int_min": {
-        "int": -9223372036854775808
+      "int_min" : {
+        "int" : -9223372036854775808
       },
-      "int_negative": {
-        "int": -4
+      "int_negative" : {
+        "int" : -4
       },
-      "int_zero": {
-        "int": 0
+      "int_zero" : {
+        "int" : 0
       },
-      "null": {
-        "null": null
+      "null" : {
+        "null" : null
       },
-      "str": {
-        "str": "Hello 🇬🇧👨‍👨‍👧‍👦😀 é"
+      "str" : {
+        "str" : "Hello 🇬🇧👨‍👨‍👧‍👦😀 é"
       },
-      "str_empty": {
-        "str": ""
+      "str_empty" : {
+        "str" : ""
       },
-      "str_escapes": {
-        "str": "quote \" backslash \\ newline \n tab \t nul \u0000"
+      "str_escapes" : {
+        "str" : "quote \" backslash \\ newline \n tab \t nul \u0000"
       },
-      "timestamp": {
-        "timestamp": -905182979000
+      "timestamp" : {
+        "timestamp" : -905182979000
       },
-      "timestamp_epoch": {
-        "timestamp": 0
+      "timestamp_epoch" : {
+        "timestamp" : 0
       },
-      "uint_max": {
-        "uint": 18446744073709551615
+      "uint_max" : {
+        "uint" : 18446744073709551615
       },
-      "uint_zero": {
-        "uint": 0
+      "uint_zero" : {
+        "uint" : 0
       }
     }
   }

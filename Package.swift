@@ -67,7 +67,7 @@ let package = Package(
         .testTarget(
             name: "AutomergeTests",
             dependencies: ["Automerge", "AutomergeUtilities"],
-            exclude: ["Fixtures"]
+            resources: [.copy("Fixtures")]
         ),
     ]
 )

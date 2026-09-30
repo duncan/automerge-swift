@@ -1,0 +1,47 @@
+{
+  "history": [
+    {
+      "actor": "4cd4253650bc4454ad8aa023db3e10f2",
+      "deps": 0,
+      "message": null,
+      "time": 0
+    }
+  ],
+  "root": {
+    "map": {
+      "bool": {
+        "bool": true
+      },
+      "bytes": {
+        "bytes": "856f4a83"
+      },
+      "counter": {
+        "counter": 5
+      },
+      "fp": {
+        "f64": "3.14159267"
+      },
+      "int": {
+        "int": -4
+      },
+      "location": {
+        "str": "https://automerge.org/"
+      },
+      "notes": {
+        "text": {
+          "marks": [],
+          "value": "🇬🇧👨‍👨‍👧‍👦😀"
+        }
+      },
+      "timestamp": {
+        "timestamp": -905182979000
+      },
+      "title": {
+        "str": "Hello 🇬🇧👨‍👨‍👧‍👦😀"
+      },
+      "uint": {
+        "uint": 18446744073709551615
+      }
+    }
+  }
+}

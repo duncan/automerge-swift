@@ -34,7 +34,7 @@ class InteropTests: XCTestCase {
     func dataFrom(resource: String) throws -> Data? {
         let urlForResource: URL
         if #available(macOS 13, *) {
-            urlForResource = fixturesDirectory().appending(component: resource)
+            urlForResource = fixturesDirectory().appending(path: resource)
         } else {
             urlForResource = fixturesDirectory().appendingPathComponent(resource)
         }
@@ -56,7 +56,7 @@ class InteropTests: XCTestCase {
     }
 
     func testExemplarAutomergeDocRepresentations() throws {
-        guard let data = try dataFrom(resource: "exemplar") else {
+        guard let data = try dataFrom(resource: "Corpus/interop/exemplar") else {
             XCTFail("Unable to load exemplar fixture")
             return
         }

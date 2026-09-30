@@ -35,6 +35,21 @@ pub enum ReceiveSyncError {
     InvalidMessage,
 }
 
+/// Converts an index from Swift to the `usize` automerge uses. An index too large for `usize`
+/// (possible on 32-bit targets such as WASM) is past the end of any object, so it saturates to
+/// `usize::MAX` and gets the same out-of-bounds handling as any other index past the end, rather
+/// than wrapping around to a small index.
+pub(crate) fn to_index(value: u64) -> usize {
+    usize::try_from(value).unwrap_or(usize::MAX)
+}
+
+/// Converts a splice's delete count from Swift to the `isize` automerge uses, saturating on 32-bit
+/// targets rather than wrapping. Deletes past either end of an object are already clamped or
+/// rejected, so a saturated count behaves like the original one.
+pub(crate) fn to_delete_count(value: i64) -> isize {
+    isize::try_from(value).unwrap_or(if value < 0 { isize::MIN } else { isize::MAX })
+}
+
 pub struct Doc(RwLock<automerge::AutoCommit>);
 
 // These are okay because on the swift side we wrap all accesses of the
@@ -95,7 +110,7 @@ impl Doc {
         let obj = am::ObjId::from(obj);
         let mut doc = self.0.write().unwrap();
         assert_list(&*doc, &obj)?;
-        doc.put(obj, index as usize, value).map_err(|e| e.into())
+        doc.put(obj, to_index(index), value).map_err(|e| e.into())
     }
 
     pub fn put_object_in_list(
@@ -107,7 +122,7 @@ impl Doc {
         let obj = am::ObjId::from(obj);
         let mut doc = self.0.write().unwrap();
         assert_list(&*doc, &obj)?;
-        let obj = doc.put_object(obj, index as usize, value.into())?;
+        let obj = doc.put_object(obj, to_index(index), value.into())?;
         Ok(obj.into())
     }
 
@@ -120,7 +135,8 @@ impl Doc {
         let obj = am::ObjId::from(obj);
         let mut doc = self.0.write().unwrap();
         assert_list(&*doc, &obj)?;
-        doc.insert(obj, index as usize, value).map_err(|e| e.into())
+        doc.insert(obj, to_index(index), value)
+            .map_err(|e| e.into())
     }
 
     pub fn insert_object_in_list(
@@ -132,7 +148,7 @@ impl Doc {
         let obj = am::ObjId::from(obj);
         let mut doc = self.0.write().unwrap();
         assert_list(&*doc, &obj)?;
-        let obj = doc.insert_object(obj, index as usize, value.into())?;
+        let obj = doc.insert_object(obj, to_index(index), value.into())?;
         Ok(obj.into())
     }
 
@@ -147,7 +163,7 @@ impl Doc {
         let obj = am::ObjId::from(obj);
         let mut doc = self.0.write().unwrap();
         assert_list(&*doc, &obj)?;
-        Ok(doc.delete(&obj, index as usize)?)
+        Ok(doc.delete(&obj, to_index(index))?)
     }
 
     pub fn increment_in_map(&self, obj: ObjId, key: String, by: i64) -> Result<(), DocError> {
@@ -161,7 +177,7 @@ impl Doc {
         let obj = am::ObjId::from(obj);
         let mut doc = self.0.write().unwrap();
         assert_list(&*doc, &obj)?;
-        Ok(doc.increment(&obj, index as usize, by)?)
+        Ok(doc.increment(&obj, to_index(index), by)?)
     }
 
     pub fn get_in_map(&self, obj: ObjId, key: String) -> Result<Option<Value>, DocError> {
@@ -175,7 +191,7 @@ impl Doc {
         let obj = am::ObjId::from(obj);
         let doc = self.0.read().unwrap();
         assert_list(&*doc, &obj)?;
-        Ok(doc.get(obj, idx as usize)?.map(|v| v.into()))
+        Ok(doc.get(obj, to_index(idx))?.map(|v| v.into()))
     }
 
     pub fn get_at_in_map(
@@ -201,7 +217,7 @@ impl Doc {
         let doc = self.0.read().unwrap();
         let heads = heads.into_iter().map(|h| h.into()).collect::<Vec<_>>();
         assert_list(&*doc, &obj)?;
-        Ok(doc.get_at(obj, idx as usize, &heads)?.map(|v| v.into()))
+        Ok(doc.get_at(obj, to_index(idx), &heads)?.map(|v| v.into()))
     }
 
     pub fn get_all_in_map(&self, obj: ObjId, key: String) -> Result<Vec<Value>, DocError> {
@@ -219,7 +235,7 @@ impl Doc {
         let obj = am::ObjId::from(obj);
         let doc = self.0.read().unwrap();
         assert_list(&*doc, &obj)?;
-        let vals = doc.get_all(&obj, index as usize)?;
+        let vals = doc.get_all(&obj, to_index(index))?;
         Ok(vals
             .into_iter()
             .map(|(v, id)| Value::from((v, id)))
@@ -256,7 +272,7 @@ impl Doc {
             .map(am::ChangeHash::from)
             .collect::<Vec<_>>();
         assert_list(&*doc, &obj)?;
-        let vals = doc.get_all_at(&obj, index as usize, heads.as_slice())?;
+        let vals = doc.get_all_at(&obj, to_index(index), heads.as_slice())?;
         Ok(vals.into_iter().map(Value::from).collect::<Vec<_>>())
     }
 
@@ -351,7 +367,7 @@ impl Doc {
     pub fn cursor(&self, obj: ObjId, position: u64) -> Result<Cursor, DocError> {
         let obj = am::ObjId::from(obj);
         let doc = self.0.read().unwrap();
-        let index = position as usize;
+        let index = to_index(position);
         let position = if index >= doc.length(&obj) {
             CursorPosition::End
         } else {
@@ -374,7 +390,7 @@ impl Doc {
             .into_iter()
             .map(am::ChangeHash::from)
             .collect::<Vec<_>>();
-        let index = position as usize;
+        let index = to_index(position);
         let cursor_position = if index >= doc.length(&obj) {
             CursorPosition::End
         } else {
@@ -438,7 +454,12 @@ impl Doc {
         let obj = am::ObjId::from(obj);
         let mut doc = self.0.write().unwrap();
         assert_text(&*doc, &obj)?;
-        doc.splice_text(&obj, start as usize, delete as isize, value.as_str())?;
+        doc.splice_text(
+            &obj,
+            to_index(start),
+            to_delete_count(delete),
+            value.as_str(),
+        )?;
         Ok(())
     }
 
@@ -462,8 +483,8 @@ impl Doc {
         assert_list(&*doc, &obj)?;
         doc.splice(
             &obj,
-            start as usize,
-            delete as isize,
+            to_index(start),
+            to_delete_count(delete),
             values.into_iter().map(|i| i.into()),
         )?;
         Ok(())
@@ -481,7 +502,13 @@ impl Doc {
         let obj = am::ObjId::from(obj);
         let mut doc = self.0.write().unwrap();
         assert_text(&*doc, &obj)?;
-        let mark = am::marks::Mark::new(name, value, start as usize, end as usize);
+        // Check the range before calling automerge: its mark applies the start of a mark whose end
+        // is out of bounds before returning the error, and very large indices overflow inside it.
+        let length = doc.length(&obj) as u64;
+        if let Some(out_of_bounds) = [start, end].into_iter().find(|&index| index > length) {
+            return Err(am::AutomergeError::InvalidIndex(to_index(out_of_bounds)).into());
+        }
+        let mark = am::marks::Mark::new(name, value, to_index(start), to_index(end));
         doc.mark(obj, mark, expand.into())?;
         Ok(())
     }
@@ -529,7 +556,7 @@ impl Doc {
             Position::Cursor { position: cursor } => doc
                 .get_cursor_position(obj.clone(), &cursor.into(), Some(&heads))
                 .unwrap() as usize,
-            Position::Index { position: index } => index as usize,
+            Position::Index { position: index } => to_index(index),
         };
         let markset = doc.get_marks(obj, index, Some(&heads)).unwrap();
         Ok(Mark::from_markset(markset, index as u64))

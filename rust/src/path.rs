@@ -20,7 +20,7 @@ impl From<Prop> for am::Prop {
     fn from(value: Prop) -> Self {
         match value {
             Prop::Key { value } => am::Prop::Map(value),
-            Prop::Index { value } => am::Prop::Seq(value as usize),
+            Prop::Index { value } => am::Prop::Seq(crate::doc::to_index(value)),
         }
     }
 }

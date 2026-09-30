@@ -90,11 +90,7 @@ struct AutomergeRegressionTests {
         #expect(reloadedValue == forwardValue)
     }
 
-    @Test(
-        "Merging into a document that made a splice that changes nothing",
-        .disabled(if: rustPanicsAbort, "on WASM, the panic aborts the test process instead of throwing"),
-        arguments: [ObjType.List, .Text]
-    )
+    @Test("Merging into a document that made a splice that changes nothing", arguments: [ObjType.List, .Text])
     func mergeAfterEmptySplice(type: ObjType) throws {
         let base = Document()
         base.actor = actor(0)
@@ -115,13 +111,6 @@ struct AutomergeRegressionTests {
         #expect(r0.length(obj: obj) == 1)
     }
 }
-
-/// On WASM, a Rust panic aborts the process. Elsewhere, UniFFI catches it and throws an error.
-#if os(WASI)
-private let rustPanicsAbort = true
-#else
-private let rustPanicsAbort = false
-#endif
 
 private func actor(_ byte: UInt8) -> ActorId {
     ActorId(data: Data(repeating: byte, count: 16))!

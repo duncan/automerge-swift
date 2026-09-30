@@ -106,8 +106,10 @@ jobs:
       - name: Run XCTest tests
         run: wasmtime run --wasm max-wasm-stack=$((1024 * 1024)) --dir . .build/wasm32-unknown-wasip1/debug/AutomergePackageTests.xctest
       # Run directly, the test binary only runs XCTest; Swift Testing needs to be asked for.
+      # Bundle.module looks for test resources at their absolute build path, so the checkout
+      # is also mapped into the guest at the same path.
       - name: Run Swift Testing tests
-        run: wasmtime run --wasm max-wasm-stack=$((1024 * 1024)) --dir . .build/wasm32-unknown-wasip1/debug/AutomergePackageTests.xctest --testing-library swift-testing
+        run: wasmtime run --wasm max-wasm-stack=$((1024 * 1024)) --dir . --dir "$PWD::$PWD" .build/wasm32-unknown-wasip1/debug/AutomergePackageTests.xctest --testing-library swift-testing
 
   rustfmt:
     runs-on: macos-latest

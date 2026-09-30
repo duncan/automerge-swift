@@ -1,0 +1,65 @@
+{
+  "history": [
+    {
+      "actor": "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+      "deps": 0,
+      "message": "write",
+      "time": 1704067200
+    },
+    {
+      "actor": "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+      "deps": 1,
+      "message": "edit and mark",
+      "time": 1704067260
+    },
+    {
+      "actor": "c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3",
+      "deps": 1,
+      "message": "unmark and update",
+      "time": 1704067320
+    }
+  ],
+  "root": {
+    "map": {
+      "text": {
+        "text": {
+          "marks": [
+            {
+              "end": 6,
+              "name": "bold",
+              "start": 1,
+              "value": {
+                "bool": true
+              }
+            },
+            {
+              "end": 9,
+              "name": "flag",
+              "start": 7,
+              "value": {
+                "str": "GB"
+              }
+            },
+            {
+              "end": 14,
+              "name": "italic",
+              "start": 10,
+              "value": {
+                "bool": true
+              }
+            },
+            {
+              "end": 21,
+              "name": "link",
+              "start": 15,
+              "value": {
+                "str": "https://automerge.org/"
+              }
+            }
+          ],
+          "value": "¡Hello 🇬🇧 wide wórld 👨‍👨‍👧‍👦!?"
+        }
+      }
+    }
+  }
+}

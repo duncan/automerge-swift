@@ -585,6 +585,19 @@ impl Doc {
         Ok(Doc(RwLock::new(ac)))
     }
 
+    /// Recovers the current contents of a document that fails to load, as a new document whose
+    /// contents are pending in its first transaction. The original history, marks and conflicting
+    /// values are lost.
+    pub fn rescue(bytes: Vec<u8>) -> Result<Self, LoadError> {
+        let value = am::Automerge::rescue(bytes.as_slice())?;
+        let mut ac = am::AutoCommit::new();
+        // The root of a document is always a map.
+        if let am::hydrate::Value::Map(root) = value {
+            ac.init_root_from_hydrate(&root)?;
+        }
+        Ok(Doc(RwLock::new(ac)))
+    }
+
     pub fn generate_sync_message(&self, sync_state: Arc<SyncState>) -> Option<Vec<u8>> {
         let mut doc = self.0.write().unwrap();
         let mut state = sync_state.0.write().unwrap();

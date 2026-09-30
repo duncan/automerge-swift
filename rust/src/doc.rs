@@ -391,7 +391,9 @@ impl Doc {
             .map(am::ChangeHash::from)
             .collect::<Vec<_>>();
         let index = to_index(position);
-        let cursor_position = if index >= doc.length(&obj) {
+        // Compare against the length at `heads`, not the current length: the text may have grown or
+        // shrunk since.
+        let cursor_position = if index >= doc.length_at(&obj, &heads) {
             CursorPosition::End
         } else {
             CursorPosition::Index(index)

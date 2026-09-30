@@ -138,3 +138,32 @@ class MarkBoundsTests: XCTestCase {
         XCTAssertEqual(try doc.marks(obj: text), [Mark(start: 1, end: 5, name: "bold", value: .Boolean(true))])
     }
 }
+
+class CursorAtHeadsTests: XCTestCase {
+    /// The cursor used to be placed by comparing the position with the text's current length, so a
+    /// position that was inside the text at `heads` became the end if the text had since shrunk.
+    func testCursorAtEarlierHeadsPointsAtTheCharacterThatWasThereAfterTheTextShrinks() throws {
+        let doc = Document()
+        let text = try doc.putObject(obj: .ROOT, key: "text", ty: .Text)
+        try doc.spliceText(obj: text, start: 0, delete: 0, value: "hello world")
+        let heads = doc.heads()
+        try doc.spliceText(obj: text, start: 0, delete: 6)
+
+        // "w" of "world".
+        let cursor = try doc.cursor(obj: text, position: 6, heads: heads)
+        XCTAssertEqual(try doc.position(obj: text, cursor: cursor, heads: heads), 6)
+        XCTAssertEqual(try doc.position(obj: text, cursor: cursor), 0)
+    }
+
+    /// A position past the end of the text at `heads`, but inside it now, is the end at `heads`.
+    func testCursorAtEarlierHeadsPastTheEndOfTheTextThenIsAtTheEndAfterTheTextGrows() throws {
+        let doc = Document()
+        let text = try doc.putObject(obj: .ROOT, key: "text", ty: .Text)
+        try doc.spliceText(obj: text, start: 0, delete: 0, value: "hello")
+        let heads = doc.heads()
+        try doc.spliceText(obj: text, start: 5, delete: 0, value: " world")
+
+        let cursor = try doc.cursor(obj: text, position: 8, heads: heads)
+        XCTAssertEqual(try doc.position(obj: text, cursor: cursor, heads: heads), 5)
+    }
+}

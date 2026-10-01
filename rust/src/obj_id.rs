@@ -5,8 +5,8 @@ pub struct ObjId(Vec<u8>);
 
 impl From<ObjId> for automerge::ObjId {
     fn from(value: ObjId) -> Self {
-        // There is no way to construct ObjId except in this library, where we always construct it
-        // from a valid object ID byte array am::ObjId::try_from(&value.0[..]).unwrap()
+        // Can't fail: Swift can't create an ObjId or decode one from data, so its bytes always come
+        // from a valid automerge object ID that this library converted.
         am::ObjId::try_from(value.0.as_slice()).unwrap()
     }
 }

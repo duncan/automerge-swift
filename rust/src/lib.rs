@@ -12,6 +12,7 @@ mod doc;
 use doc::{Doc, DocError, LoadError, ReceiveSyncError};
 mod element_id;
 use element_id::ElementId;
+mod lock;
 mod mark;
 use mark::{ExpandMark, KeyValue, Mark};
 mod obj_id;

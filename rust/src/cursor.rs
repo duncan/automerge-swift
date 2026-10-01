@@ -10,6 +10,8 @@ pub enum Position {
 
 impl From<Cursor> for am::Cursor {
     fn from(value: Cursor) -> Self {
+        // Can't fail: Swift can't create a Cursor or decode one from data, so its bytes always come
+        // from a valid automerge cursor that this library converted.
         am::Cursor::try_from(value.0).unwrap()
     }
 }

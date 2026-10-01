@@ -10,6 +10,7 @@ mod change_hash;
 use change_hash::ChangeHash;
 mod doc;
 use doc::{Doc, DocError, LoadError, ReceiveSyncError};
+mod lock;
 mod mark;
 use mark::{ExpandMark, KeyValue, Mark};
 mod obj_id;

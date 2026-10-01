@@ -1073,7 +1073,7 @@ public final class Document: @unchecked Sendable {
         try lock {
             sendObjectWillChange()
             defer { sendObjectDidChange() }
-            try self.doc.wrapErrors {
+            try self.doc.wrapErrors(unexpected: .receiveSync) {
                 try $0.receiveSyncMessage(state: state.ffi_state, msg: Array(message))
             }
         }
@@ -1090,7 +1090,7 @@ public final class Document: @unchecked Sendable {
         try lock {
             sendObjectWillChange()
             defer { sendObjectDidChange() }
-            let patches = try self.doc.wrapErrors {
+            let patches = try self.doc.wrapErrors(unexpected: .receiveSync) {
                 try $0.receiveSyncMessageWithPatches(state: state.ffi_state, msg: Array(message))
             }
             return patches.map { Patch($0) }
@@ -1340,12 +1340,13 @@ struct WrappedDoc {
         self.doc = doc
     }
 
+    /// Creates a document by loading data, so an unexpected failure throws a ``LoadError``.
     init(_ f: () throws -> Doc) throws {
-        doc = try wrappedErrors { try f() }
+        doc = try wrappedErrors(unexpected: .load) { try f() }
     }
 
-    func wrapErrors<T>(f: (Doc) throws -> T) throws -> T {
-        try wrappedErrors { try f(doc) }
+    func wrapErrors<T>(unexpected: UnexpectedFailure = .doc, f: (Doc) throws -> T) throws -> T {
+        try wrappedErrors(unexpected: unexpected) { try f(doc) }
     }
 
     func wrapErrors<T>(f: (Doc) -> T) -> T {

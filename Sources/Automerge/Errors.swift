@@ -85,7 +85,30 @@ public struct ReceiveSyncError: LocalizedError {
     }
 }
 
-func wrappedErrors<T>(_ f: () throws -> T) throws -> T {
+/// The public error a call throws when the Rust library fails unexpectedly, which happens when it
+/// panics.
+///
+/// UniFFI reports a panic in a throwing call as its own internal error type, which isn't public. So that
+/// callers can handle it with the errors they already catch, it becomes the `Internal` case of the
+/// error the call throws otherwise.
+enum UnexpectedFailure {
+    case doc
+    case load
+    case receiveSync
+    case decodeSyncState
+
+    func error(_ underlying: any Error) -> any Error {
+        let message = "automerge failed unexpectedly: \(underlying)"
+        switch self {
+        case .doc: return DocError(.Internal(message: message))
+        case .load: return LoadError(.Internal(message: message))
+        case .receiveSync: return ReceiveSyncError(.Internal(message: message))
+        case .decodeSyncState: return DecodeSyncStateError(.Internal(message: message))
+        }
+    }
+}
+
+func wrappedErrors<T>(unexpected: UnexpectedFailure = .doc, _ f: () throws -> T) throws -> T {
     do {
         return try f()
     } catch let error as FfiDocError {
@@ -96,5 +119,8 @@ func wrappedErrors<T>(_ f: () throws -> T) throws -> T {
         throw ReceiveSyncError(error)
     } catch let error as FfiDecodeSyncStateError {
         throw DecodeSyncStateError(error)
+    } catch {
+        // The FFI calls only throw the errors above, or UniFFI's error for a Rust panic.
+        throw unexpected.error(error)
     }
 }

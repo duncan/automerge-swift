@@ -1,4 +1,4 @@
-import Automerge
+@testable import Automerge
 import AutomergeUtilities
 import Foundation
 import Testing
@@ -93,18 +93,44 @@ struct HistoryContractTests {
         #expect(try fork.values(obj: h.list) == h.doc.valuesAt(obj: h.list, heads: h.second))
     }
 
-    @Test("The difference between heads lists what changed")
+    @Test("The difference between heads lists exactly what changed, in either direction")
     func differenceBetweenHeads() throws {
         let h = try History()
-        let patches = h.doc.difference(from: h.second, to: h.third)
-        let reverse = h.doc.difference(from: h.third, to: h.second)
-        #expect(!patches.isEmpty)
-        #expect(!reverse.isEmpty)
+        let listPath = [PathElement(obj: .ROOT, prop: .Key("list"))]
+        let textPath = [PathElement(obj: .ROOT, prop: .Key("text"))]
+
+        #expect(h.doc.difference(from: h.first, to: h.second) == [
+            Patch(action: .Put(.ROOT, .Key("added"), .Scalar(.Int(1))), path: []),
+            Patch(action: .Put(.ROOT, .Key("status"), .Scalar(.String("review"))), path: []),
+            Patch(action: .Insert(obj: h.list, index: 1, values: [.Scalar(.String("b"))]), path: listPath),
+            Patch(action: .Marks(h.text, [Mark(start: 0, end: 5, name: "bold", value: .Boolean(true))]), path: textPath),
+            Patch(action: .SpliceText(obj: h.text, index: 5, value: " world", marks: [:]), path: textPath),
+        ])
+
+        #expect(h.doc.difference(from: h.second, to: h.third) == [
+            Patch(action: .DeleteMap(.ROOT, "added"), path: []),
+            Patch(action: .Put(.ROOT, .Key("status"), .Scalar(.String("published"))), path: []),
+            Patch(action: .DeleteSeq(DeleteSeq(obj: h.list, index: 0, length: 1)), path: listPath),
+            Patch(action: .DeleteSeq(DeleteSeq(obj: h.text, index: 0, length: 6)), path: textPath),
+        ])
+
+        // Going backwards undoes each of those. The restored text comes back as two splices, because
+        // only "hello" was bold.
+        #expect(h.doc.difference(from: h.third, to: h.second) == [
+            Patch(action: .Put(.ROOT, .Key("added"), .Scalar(.Int(1))), path: []),
+            Patch(action: .Put(.ROOT, .Key("status"), .Scalar(.String("review"))), path: []),
+            Patch(action: .Insert(obj: h.list, index: 0, values: [.Scalar(.String("a"))]), path: listPath),
+            Patch(
+                action: .SpliceText(obj: h.text, index: 0, value: "hello", marks: ["bold": .Scalar(.Boolean(true))]),
+                path: textPath
+            ),
+            Patch(action: .SpliceText(obj: h.text, index: 5, value: " ", marks: [:]), path: textPath),
+        ])
+
         #expect(h.doc.difference(from: h.third, to: h.third).isEmpty)
-        // Applying the forward difference to the earlier version gives the later one.
-        let earlier = try h.doc.forkAt(heads: h.second)
-        try earlier.merge(other: h.doc)
-        #expect(try CorpusDump.contents(of: earlier) == CorpusDump.contents(of: h.doc))
+        // `since` and `to` are shorthand for differences from and to the current heads.
+        #expect(h.doc.difference(since: h.second) == h.doc.difference(from: h.second, to: h.third))
+        #expect(h.doc.difference(to: h.second) == h.doc.difference(from: h.third, to: h.second))
     }
 
     @Test("Empty heads read as an empty document")

@@ -137,3 +137,5 @@ jobs:
           components: clippy
       - name: Clippy
         run: ./scripts/ci/clippy.sh
+      - name: Rust unit tests
+        run: ./scripts/ci/rust-test.sh

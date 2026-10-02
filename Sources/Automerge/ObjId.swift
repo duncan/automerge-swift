@@ -5,6 +5,16 @@ public struct ObjId: Equatable, Hashable, Sendable {
     var bytes: [UInt8]
     /// The root identifier for an Automerge document.
     public static let ROOT = ObjId(bytes: AutomergeUniffi.root())
+
+    // The bytes include a hint that can differ between two IDs for the same object, so automerge
+    // compares and hashes them.
+    public static func == (lhs: ObjId, rhs: ObjId) -> Bool {
+        AutomergeUniffi.objIdEqual(a: lhs.bytes, b: rhs.bytes)
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(AutomergeUniffi.objIdHash(id: bytes))
+    }
 }
 
 extension ObjId: CustomDebugStringConvertible {

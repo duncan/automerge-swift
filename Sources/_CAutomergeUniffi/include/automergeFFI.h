@@ -633,6 +633,16 @@ void uniffi_uniffi_automerge_fn_method_syncstate_reset(void*_Nonnull ptr, RustCa
 RustBuffer uniffi_uniffi_automerge_fn_method_syncstate_their_heads(void*_Nonnull ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_FUNC_OBJ_ID_EQUAL
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_FUNC_OBJ_ID_EQUAL
+int8_t uniffi_uniffi_automerge_fn_func_obj_id_equal(RustBuffer a, RustBuffer b, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_FUNC_OBJ_ID_HASH
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_FUNC_OBJ_ID_HASH
+uint64_t uniffi_uniffi_automerge_fn_func_obj_id_hash(RustBuffer id, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_FUNC_ROOT
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_FUNC_ROOT
 RustBuffer uniffi_uniffi_automerge_fn_func_root(RustCallStatus *_Nonnull out_status
@@ -917,6 +927,18 @@ void ffi_uniffi_automerge_rust_future_free_void(uint64_t handle
 #ifndef UNIFFI_FFIDEF_FFI_UNIFFI_AUTOMERGE_RUST_FUTURE_COMPLETE_VOID
 #define UNIFFI_FFIDEF_FFI_UNIFFI_AUTOMERGE_RUST_FUTURE_COMPLETE_VOID
 void ffi_uniffi_automerge_rust_future_complete_void(uint64_t handle, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_FUNC_OBJ_ID_EQUAL
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_FUNC_OBJ_ID_EQUAL
+uint16_t uniffi_uniffi_automerge_checksum_func_obj_id_equal(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_FUNC_OBJ_ID_HASH
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_FUNC_OBJ_ID_HASH
+uint16_t uniffi_uniffi_automerge_checksum_func_obj_id_hash(void
+    
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_FUNC_ROOT

@@ -1,5 +1,7 @@
 namespace automerge {
     ObjId root();
+    boolean obj_id_equal(ObjId a, ObjId b);
+    u64 obj_id_hash(ObjId id);
 };
 
 [Custom]

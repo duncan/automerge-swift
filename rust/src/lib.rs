@@ -13,7 +13,7 @@ use doc::{Doc, DocError, LoadError, ReceiveSyncError};
 mod mark;
 use mark::{ExpandMark, KeyValue, Mark};
 mod obj_id;
-use obj_id::{root, ObjId};
+use obj_id::{obj_id_equal, obj_id_hash, root, ObjId};
 mod obj_type;
 use obj_type::ObjType;
 mod patches;

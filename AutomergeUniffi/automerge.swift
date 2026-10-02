@@ -3393,6 +3393,21 @@ public func FfiConverterTypeObjId_lower(_ value: ObjId) -> RustBuffer {
     return FfiConverterTypeObjId.lower(value)
 }
 
+public func objIdEqual(a: ObjId, b: ObjId) -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_uniffi_automerge_fn_func_obj_id_equal(
+        FfiConverterTypeObjId.lower(a),
+        FfiConverterTypeObjId.lower(b),$0
+    )
+})
+}
+public func objIdHash(id: ObjId) -> UInt64 {
+    return try!  FfiConverterUInt64.lift(try! rustCall() {
+    uniffi_uniffi_automerge_fn_func_obj_id_hash(
+        FfiConverterTypeObjId.lower(id),$0
+    )
+})
+}
 public func root() -> ObjId {
     return try!  FfiConverterTypeObjId.lift(try! rustCall() {
     uniffi_uniffi_automerge_fn_func_root($0
@@ -3414,6 +3429,12 @@ private var initializationResult: InitializationResult = {
     let scaffolding_contract_version = ffi_uniffi_automerge_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_func_obj_id_equal() != 50254) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_func_obj_id_hash() != 50827) {
+        return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_func_root() != 19647) {
         return InitializationResult.apiChecksumMismatch

@@ -2,15 +2,12 @@ import Automerge
 import Foundation
 import Testing
 
-/// Minimal reproductions of bugs the convergence tests found in the automerge crate this package uses
-/// (0.7.2). Each is fixed in automerge 0.12.0. When the crate is updated, these known issues stop
-/// being recorded, which fails the test so that the marker can be removed.
-@Suite("Known automerge 0.7.2 bugs")
-struct KnownAutomergeBugTests {
-    @Test(
-        "Encoding a change that increments a counter in a list and then inserts into the list",
-        .disabled("automerge 0.7.2 panics in the change collector, which crashes the test process")
-    )
+/// Minimal reproductions of bugs the convergence tests found in automerge 0.7.2, all fixed in 0.12.0.
+@Suite("automerge regressions")
+struct AutomergeRegressionTests {
+    /// automerge 0.7.2 panicked in its change collector, and since `generateSyncMessage` doesn't throw,
+    /// syncing crashed the app.
+    @Test("Encoding a change that increments a counter in a list and then inserts into the list")
     func incrementedListCounterEncodes() throws {
         let doc = Document()
         let list = try doc.putObject(obj: .ROOT, key: "list", ty: .List)
@@ -20,8 +17,8 @@ struct KnownAutomergeBugTests {
         doc.commitWith(message: nil, timestamp: Date(timeIntervalSince1970: 0))
 
         // Both of these rebuild the change's bytes; the second is what syncing does.
-        let changes = doc.getHistory().compactMap { doc.change(hash: $0) }
-        #expect(changes.count == 2)
+        let history = doc.getHistory()
+        #expect(history.compactMap { doc.change(hash: $0) }.count == history.count)
         #expect(doc.generateSyncMessage(state: SyncState()) != nil)
     }
 
@@ -49,14 +46,13 @@ struct KnownAutomergeBugTests {
         try backward.merge(other: r0)
         let reloaded = try Document(backward.save())
 
-        #expect(try backward.get(obj: .ROOT, key: "a") == forward.get(obj: .ROOT, key: "a"))
+        // automerge 0.7.2 kept the overwritten Uint(7) in memory after merging backward.
         let backwardValues = try backward.getAll(obj: .ROOT, key: "a")
         let forwardValues = try forward.getAll(obj: .ROOT, key: "a")
         let reloadedValues = try reloaded.getAll(obj: .ROOT, key: "a")
-        withKnownIssue("automerge 0.7.2 keeps the overwritten Uint(7) in memory after merging backward") {
-            #expect(backwardValues == forwardValues)
-            #expect(backwardValues == reloadedValues)
-        }
+        #expect(forwardValues == [.Scalar(.Counter(1))])
+        #expect(backwardValues == forwardValues)
+        #expect(reloadedValues == forwardValues)
     }
 
     @Test("Merge order doesn't change a key's visible value")
@@ -88,18 +84,13 @@ struct KnownAutomergeBugTests {
         let forwardValue = try forward.get(obj: .ROOT, key: "d")
         let reloadedValue = try Document(backward.save()).get(obj: .ROOT, key: "d")
         let backwardValue = try backward.get(obj: .ROOT, key: "d")
+        // automerge 0.7.2 returned the overwritten map after merging backward, until reloaded.
         #expect(forwardValue == .Scalar(.Counter(3)))
-        #expect(reloadedValue == .Scalar(.Counter(3)))
-        withKnownIssue("automerge 0.7.2 returns the overwritten map after merging backward, until reloaded") {
-            #expect(backwardValue == forwardValue)
-        }
+        #expect(backwardValue == forwardValue)
+        #expect(reloadedValue == forwardValue)
     }
 
-    @Test(
-        "Merging into a document that made a splice that changes nothing",
-        .disabled(if: rustPanicsAbort, "on WASM, the panic aborts the test process instead of throwing"),
-        arguments: [ObjType.List, .Text]
-    )
+    @Test("Merging into a document that made a splice that changes nothing", arguments: [ObjType.List, .Text])
     func mergeAfterEmptySplice(type: ObjType) throws {
         let base = Document()
         base.actor = actor(0)
@@ -115,19 +106,11 @@ struct KnownAutomergeBugTests {
             try r0.splice(obj: obj, start: 0, delete: 0, values: [])
             try r1.insert(obj: obj, index: 0, value: .Null)
         }
-        withKnownIssue("automerge 0.7.2 panics with PatchLogMismatch, which surfaces as an internal error") {
-            try r0.merge(other: r1)
-            #expect(r0.length(obj: obj) == 1)
-        }
+        // automerge 0.7.2 panicked with PatchLogMismatch, which surfaced as an internal error.
+        try r0.merge(other: r1)
+        #expect(r0.length(obj: obj) == 1)
     }
 }
-
-/// On WASM, a Rust panic aborts the process. Elsewhere, UniFFI catches it and throws an error.
-#if os(WASI)
-private let rustPanicsAbort = true
-#else
-private let rustPanicsAbort = false
-#endif
 
 private func actor(_ byte: UInt8) -> ActorId {
     ActorId(data: Data(repeating: byte, count: 16))!

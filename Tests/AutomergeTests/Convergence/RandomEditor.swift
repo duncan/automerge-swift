@@ -123,17 +123,17 @@ struct RandomEditor {
             log.append("\(name): delete \(obj)[\(index)]")
             try doc.delete(obj: obj, index: index)
         case 8 where length > 0:
-            // Counters in lists are never incremented: automerge 0.7.2 panics when it encodes a change
-            // that increments a counter in a list and inserts after it. See
-            // `KnownAutomergeBugTests.incrementedListCounterEncodes`.
             let index = UInt64(random.below(length))
-            log.append("\(name): put \(obj)[\(index)] = counter 1")
-            try doc.put(obj: obj, index: index, value: .Counter(1))
+            if case .Scalar(.Counter) = try doc.get(obj: obj, index: index) {
+                log.append("\(name): increment \(obj)[\(index)] by 1")
+                try doc.increment(obj: obj, index: index, by: 1)
+            } else {
+                log.append("\(name): put \(obj)[\(index)] = counter 1")
+                try doc.put(obj: obj, index: index, value: .Counter(1))
+            }
         default:
             let delete = random.below(min(3, length - Int(index)) + 1)
-            // A splice always inserts something: automerge 0.7.2 fails to merge into a document that
-            // made a splice that changes nothing. See `KnownAutomergeBugTests.mergeAfterEmptySplice`.
-            let values = (0 ..< 1 + random.below(2)).map { _ in randomScalar() }
+            let values = (0 ..< random.below(3)).map { _ in randomScalar() }
             log.append("\(name): splice \(obj)[\(index)] delete \(delete) insert \(values)")
             try doc.splice(obj: obj, start: index, delete: Int64(delete), values: values)
         }
@@ -145,11 +145,7 @@ struct RandomEditor {
         case 0 ..< 5:
             let start = random.below(length + 1)
             let delete = random.below(min(3, length - start) + 1)
-            var value = random.pick(Self.strings)
-            if delete == 0, value.isEmpty {
-                // See the list splice above: automerge 0.7.2 can't merge after a splice that changes nothing.
-                value = "x"
-            }
+            let value = random.pick(Self.strings)
             log.append("\(name): spliceText \(obj)[\(start)] delete \(delete) insert \(value.debugDescription)")
             try doc.spliceText(obj: obj, start: UInt64(start), delete: Int64(delete), value: value)
         case 5 ..< 8 where length > 0:

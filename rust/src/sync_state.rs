@@ -24,18 +24,19 @@ impl SyncState {
     }
 
     pub fn encode(&self) -> Vec<u8> {
-        self.0.read().unwrap().encode()
+        crate::lock::read(&self.0).encode()
     }
 
     pub fn reset(&self) {
-        let mut s = self.0.write().unwrap();
+        let mut s = crate::lock::write(&self.0);
         let encoded = s.encode();
+        // Can't fail: this decodes what the line above just encoded.
         let decoded = am::sync::State::decode(encoded.as_slice()).unwrap();
         *s = decoded
     }
 
     pub fn their_heads(&self) -> Option<Vec<ChangeHash>> {
-        let sync = self.0.read().unwrap();
+        let sync = crate::lock::read(&self.0);
         sync.their_heads
             .as_ref()
             .map(|heads| heads.iter().map(ChangeHash::from).collect())

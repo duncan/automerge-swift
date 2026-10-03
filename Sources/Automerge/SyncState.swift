@@ -65,7 +65,7 @@ public struct SyncState: @unchecked Sendable {
     ///
     /// Serialize a sync state using ``SyncState/encode()``.
     public init(bytes: Data) throws {
-        ffi_state = try wrappedErrors { try FfiSyncState.decode(bytes: Array(bytes)) }
+        ffi_state = try wrappedErrors(unexpected: .decodeSyncState) { try FfiSyncState.decode(bytes: Array(bytes)) }
     }
 
     /// Reset the state if the connection is interrupted

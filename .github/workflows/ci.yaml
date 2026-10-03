@@ -126,3 +126,5 @@ jobs:
           rustup default 1.89.0
       - name: Clippy
         run: ./scripts/ci/clippy.sh
+      - name: Rust unit tests
+        run: ./scripts/ci/rust-test.sh

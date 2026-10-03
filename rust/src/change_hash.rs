@@ -5,6 +5,8 @@ pub struct ChangeHash(Vec<u8>);
 
 impl From<ChangeHash> for am::ChangeHash {
     fn from(value: ChangeHash) -> Self {
+        // Can't fail: Swift can't create a ChangeHash or decode one from data, so its bytes always
+        // come from a 32-byte automerge change hash that this library converted.
         let inner: [u8; 32] = value.0.try_into().unwrap();
         am::ChangeHash(inner)
     }

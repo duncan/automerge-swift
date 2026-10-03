@@ -58,7 +58,7 @@ func hex<Bytes: Sequence>(_ bytes: Bytes) -> String where Bytes.Element == UInt8
 enum CorpusDump {
     static func json(for doc: Document) throws -> JSONValue {
         .object([
-            "root": try object(.ROOT, type: .Map, in: doc),
+            "root": try contents(of: doc),
             "history": .array(doc.getHistory().map { hash in
                 guard let change = doc.change(hash: hash) else { return .null }
                 return .object([
@@ -69,6 +69,12 @@ enum CorpusDump {
                 ])
             }),
         ])
+    }
+
+    /// The typed dump of the document's contents alone, without its history. Replicas with the same
+    /// changes have the same contents, but may list their history in a different order.
+    static func contents(of doc: Document) throws -> JSONValue {
+        try object(.ROOT, type: .Map, in: doc)
     }
 
     /// The untyped JSON that `automerge export` from the Rust CLI produces, for comparing with

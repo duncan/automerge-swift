@@ -464,7 +464,7 @@ impl Doc {
             &obj,
             start as usize,
             delete as isize,
-            values.into_iter().map(|i| i.into()),
+            values.into_iter().map(am::ScalarValue::from),
         )?;
         Ok(())
     }
@@ -582,6 +582,19 @@ impl Doc {
 
     pub fn load(bytes: Vec<u8>) -> Result<Self, LoadError> {
         let ac = automerge::AutoCommit::load(bytes.as_slice())?;
+        Ok(Doc(RwLock::new(ac)))
+    }
+
+    /// Recovers the current contents of a document that fails to load, as a new document whose
+    /// contents are pending in its first transaction. The original history, marks and conflicting
+    /// values are lost.
+    pub fn rescue(bytes: Vec<u8>) -> Result<Self, LoadError> {
+        let value = am::Automerge::rescue(bytes.as_slice())?;
+        let mut ac = am::AutoCommit::new();
+        // The root of a document is always a map.
+        if let am::hydrate::Value::Map(root) = value {
+            ac.init_root_from_hydrate(&root)?;
+        }
         Ok(Doc(RwLock::new(ac)))
     }
 

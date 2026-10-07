@@ -733,6 +733,15 @@ public static func load(bytes: [UInt8])throws  -> Doc {
 })
 }
     
+public static func loadWithTextEncoding(bytes: [UInt8], textEncoding: TextEncoding)throws  -> Doc {
+    return try  FfiConverterTypeDoc.lift(try rustCallWithError(FfiConverterTypeLoadError.lift) {
+    uniffi_uniffi_automerge_fn_constructor_doc_load_with_text_encoding(
+        FfiConverterSequenceUInt8.lower(bytes),
+        FfiConverterTypeTextEncoding.lower(textEncoding),$0
+    )
+})
+}
+    
 public static func newWithActor(actor: ActorId) -> Doc {
     return try!  FfiConverterTypeDoc.lift(try! rustCall() {
     uniffi_uniffi_automerge_fn_constructor_doc_new_with_actor(
@@ -3974,6 +3983,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_constructor_doc_load() != 20048) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_constructor_doc_load_with_text_encoding() != 26143) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_constructor_doc_new() != 9447) {

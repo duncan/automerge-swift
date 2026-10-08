@@ -63,4 +63,21 @@ class GetTextElementsTestCase: XCTestCase {
         assertThrowsWrongObjectType(try doc.getAt(obj: map, index: 0, heads: heads))
         assertThrowsWrongObjectType(try doc.getAllAt(obj: map, index: 0, heads: heads))
     }
+
+    func testGetBlockMarker() throws {
+        let doc = Document(textEncoding: .utf16)
+        let text = try doc.putObject(obj: ObjId.ROOT, key: "text", ty: .Text)
+        try doc.spliceText(obj: text, start: 0, delete: 0, value: "😀ab")
+        let block = try doc.splitBlock(obj: text, index: 2, block: [
+            "type": .scalar(.String("heading")), "parents": .array([]), "attrs": .dict([:]),
+        ])
+        let heads = doc.heads()
+        try doc.put(obj: block, key: "type", value: .String("paragraph"))
+
+        XCTAssertEqual(try doc.get(obj: text, index: 2), .Object(block, .Map))
+        XCTAssertEqual(try doc.getAll(obj: text, index: 2), [.Object(block, .Map)])
+        XCTAssertEqual(try doc.getAt(obj: text, index: 2, heads: heads), .Object(block, .Map))
+        XCTAssertEqual(try doc.get(obj: block, key: "type"), .Scalar(.String("paragraph")))
+        XCTAssertEqual(try doc.get(obj: text, index: 3), .Scalar(.String("a")))
+    }
 }

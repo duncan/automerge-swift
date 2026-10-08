@@ -192,7 +192,7 @@ impl Doc {
     pub fn get_in_list(&self, obj: ObjId, idx: u64) -> Result<Option<Value>, DocError> {
         let obj = am::ObjId::from(obj);
         let doc = self.0.read().unwrap();
-        assert_list(&*doc, &obj)?;
+        assert_sequence(&*doc, &obj)?;
         Ok(doc.get(obj, to_index(idx))?.map(|v| v.into()))
     }
 
@@ -218,7 +218,7 @@ impl Doc {
         let obj = am::ObjId::from(obj);
         let doc = self.0.read().unwrap();
         let heads = heads.into_iter().map(|h| h.into()).collect::<Vec<_>>();
-        assert_list(&*doc, &obj)?;
+        assert_sequence(&*doc, &obj)?;
         Ok(doc.get_at(obj, to_index(idx), &heads)?.map(|v| v.into()))
     }
 
@@ -236,7 +236,7 @@ impl Doc {
     pub fn get_all_in_list(&self, obj: ObjId, index: u64) -> Result<Vec<Value>, DocError> {
         let obj = am::ObjId::from(obj);
         let doc = self.0.read().unwrap();
-        assert_list(&*doc, &obj)?;
+        assert_sequence(&*doc, &obj)?;
         let vals = doc.get_all(&obj, to_index(index))?;
         Ok(vals
             .into_iter()
@@ -273,7 +273,7 @@ impl Doc {
             .into_iter()
             .map(am::ChangeHash::from)
             .collect::<Vec<_>>();
-        assert_list(&*doc, &obj)?;
+        assert_sequence(&*doc, &obj)?;
         let vals = doc.get_all_at(&obj, to_index(index), heads.as_slice())?;
         Ok(vals.into_iter().map(Value::from).collect::<Vec<_>>())
     }
@@ -873,6 +873,15 @@ fn assert_map<R: am::ReadDoc>(doc: &R, obj: &am::ObjId) -> Result<(), DocError> 
 fn assert_list<R: am::ReadDoc>(doc: &R, obj: &am::ObjId) -> Result<(), DocError> {
     match doc.object_type(obj)? {
         am::ObjType::List => Ok(()),
+        _ => Err(DocError::WrongObjectType),
+    }
+}
+
+/// Checks that an object is a list or text. Reading a text element by index returns a character as a string
+/// scalar, or a block marker as its map. Indexes in text count in the document's text encoding.
+fn assert_sequence<R: am::ReadDoc>(doc: &R, obj: &am::ObjId) -> Result<(), DocError> {
+    match doc.object_type(obj)? {
+        am::ObjType::List | am::ObjType::Text => Ok(()),
         _ => Err(DocError::WrongObjectType),
     }
 }

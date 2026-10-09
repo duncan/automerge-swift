@@ -68,6 +68,7 @@ Read <doc:FiveMinuteQuickstart> to get a quick taste of how to use Automerge, or
 
 - ``Automerge/AutomergeText``
 - ``Automerge/Cursor``
+- ``Automerge/ElementId``
 - ``Automerge/Position``
 - ``Automerge/Mark``
 - ``Automerge/ExpandMark``

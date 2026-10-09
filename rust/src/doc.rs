@@ -5,6 +5,7 @@ use automerge::{transaction::Transactable, ReadDoc};
 
 use crate::actor_id::ActorId;
 use crate::cursor::Position;
+use crate::element_id::ElementId;
 use crate::mark::{ExpandMark, KeyValue, Mark};
 use crate::patches::Patch;
 use crate::text_encoding::TextEncoding;
@@ -410,6 +411,54 @@ impl Doc {
             .map_err(|error| DocError::Internal(error))
     }
 
+    pub fn element_ids(
+        &self,
+        obj: ObjId,
+        start: u64,
+        end: u64,
+    ) -> Result<Vec<ElementId>, DocError> {
+        let obj = am::ObjId::from(obj);
+        let doc = self.0.read().unwrap();
+        element_ids(&doc, &obj, start, end, None)
+    }
+
+    pub fn element_ids_at(
+        &self,
+        obj: ObjId,
+        start: u64,
+        end: u64,
+        heads: Vec<ChangeHash>,
+    ) -> Result<Vec<ElementId>, DocError> {
+        let obj = am::ObjId::from(obj);
+        let doc = self.0.read().unwrap();
+        let heads = heads
+            .into_iter()
+            .map(am::ChangeHash::from)
+            .collect::<Vec<_>>();
+        element_ids(&doc, &obj, start, end, Some(&heads))
+    }
+
+    pub fn element_position(&self, obj: ObjId, id: ElementId) -> Result<Option<u64>, DocError> {
+        let obj = am::ObjId::from(obj);
+        let doc = self.0.read().unwrap();
+        element_position(&doc, &obj, id, None)
+    }
+
+    pub fn element_position_at(
+        &self,
+        obj: ObjId,
+        id: ElementId,
+        heads: Vec<ChangeHash>,
+    ) -> Result<Option<u64>, DocError> {
+        let obj = am::ObjId::from(obj);
+        let doc = self.0.read().unwrap();
+        let heads = heads
+            .into_iter()
+            .map(am::ChangeHash::from)
+            .collect::<Vec<_>>();
+        element_position(&doc, &obj, id, Some(&heads))
+    }
+
     pub fn text(&self, obj: ObjId) -> Result<String, DocError> {
         let obj = am::ObjId::from(obj);
         let doc = self.0.read().unwrap();
@@ -756,4 +805,120 @@ fn assert_text<R: am::ReadDoc>(doc: &R, obj: &am::ObjId) -> Result<(), DocError>
         am::ObjType::Text => Ok(()),
         _ => Err(DocError::WrongObjectType),
     }
+}
+
+/// Checks that an object is a list or text, and returns whether it's text.
+fn is_text<R: am::ReadDoc>(doc: &R, obj: &am::ObjId) -> Result<bool, DocError> {
+    match doc.object_type(obj)? {
+        am::ObjType::List => Ok(false),
+        am::ObjType::Text => Ok(true),
+        _ => Err(DocError::WrongObjectType),
+    }
+}
+
+fn get_element(
+    doc: &am::AutoCommit,
+    obj: &am::ObjId,
+    index: usize,
+    heads: Option<&[am::ChangeHash]>,
+) -> Result<Option<(am::Value<'static>, am::ObjId)>, DocError> {
+    let element = match heads {
+        Some(heads) => doc.get_at(obj, index, heads)?,
+        None => doc.get(obj, index)?,
+    };
+    Ok(element.map(|(value, id)| (value.into_owned(), id)))
+}
+
+/// Reads the IDs of the elements that overlap `start..end`, in order. Text positions count in the document's text
+/// encoding, so a range that starts inside a character includes that character.
+fn element_ids(
+    doc: &am::AutoCommit,
+    obj: &am::ObjId,
+    start: u64,
+    end: u64,
+    heads: Option<&[am::ChangeHash]>,
+) -> Result<Vec<ElementId>, DocError> {
+    let text = is_text(doc, obj)?;
+    let length = match heads {
+        Some(heads) => doc.length_at(obj, heads),
+        None => doc.length(obj),
+    };
+    // Clamp before converting, so bounds past `usize` on 32-bit targets don't wrap.
+    let end = end.min(length as u64);
+    if start >= end {
+        return Ok(Vec::new());
+    }
+    let end = end as usize;
+    let mut index = start as usize;
+    if text && index > 0 {
+        // A cursor points at the element covering a position, so its position is that element's start.
+        let cursor = doc.get_cursor(obj, index, heads)?;
+        index = doc.get_cursor_position(obj, &cursor, heads)?;
+    }
+    let encoding = doc.text_encoding();
+    let mut ids = Vec::new();
+    while index < end {
+        let Some((value, id)) = get_element(doc, obj, index, heads)? else {
+            break;
+        };
+        ids.extend(ElementId::from_exid(obj, &id));
+        index += if text {
+            text_width(&value, encoding)
+        } else {
+            1
+        };
+    }
+    Ok(ids)
+}
+
+/// The number of units a text element takes in the text encoding. As in the core, a character counts by its own
+/// encoding, and a block marker as the object replacement character.
+fn text_width(value: &am::Value<'_>, encoding: am::TextEncoding) -> usize {
+    let string = match value {
+        am::Value::Scalar(scalar) => match scalar.as_ref() {
+            am::ScalarValue::Str(string) => string.as_str(),
+            _ => "\u{fffc}",
+        },
+        am::Value::Object(_) => "\u{fffc}",
+    };
+    match encoding {
+        am::TextEncoding::UnicodeCodePoint => string.chars().count(),
+        am::TextEncoding::Utf8CodeUnit => string.len(),
+        am::TextEncoding::Utf16CodeUnit => string.encode_utf16().count(),
+        // An element is one code point, which is one grapheme on its own.
+        am::TextEncoding::GraphemeCluster => 1,
+    }
+}
+
+/// Finds an element's position, or `None` if the object doesn't hold it: it belongs to another object, was
+/// deleted, or didn't exist yet at `heads`.
+fn element_position(
+    doc: &am::AutoCommit,
+    obj: &am::ObjId,
+    id: ElementId,
+    heads: Option<&[am::ChangeHash]>,
+) -> Result<Option<u64>, DocError> {
+    is_text(doc, obj)?;
+    let (element_obj, actor, counter) = id.into_parts();
+    // The core panics when it resolves a cursor against another object, so check the object first. `ObjId`
+    // equality compares actors, not their indexes, which can change as actors arrive.
+    if element_obj != *obj {
+        return Ok(None);
+    }
+    // A cursor is attached to an element's ID, written `counter@actor`.
+    let cursor = am::Cursor::try_from(format!("{counter}@{actor}").as_str())?;
+    // A deleted element's cursor resolves to the position after it, so check that the element there is this one.
+    let index = match doc.get_cursor_position(obj, &cursor, heads) {
+        Ok(index) => index,
+        Err(am::AutomergeError::InvalidCursor(_)) => return Ok(None),
+        Err(error) => return Err(error.into()),
+    };
+    Ok(match get_element(doc, obj, index, heads)? {
+        Some((_, am::ObjId::Id(found_counter, found_actor, _)))
+            if found_counter == counter && found_actor == actor =>
+        {
+            Some(index as u64)
+        }
+        _ => None,
+    })
 }

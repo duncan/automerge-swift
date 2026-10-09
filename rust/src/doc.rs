@@ -829,8 +829,9 @@ fn get_element(
     Ok(element.map(|(value, id)| (value.into_owned(), id)))
 }
 
-/// Reads the IDs of the elements that overlap `start..end`, in order. Text positions count in the document's text
-/// encoding, so a range that starts inside a character includes that character.
+/// Reads the IDs of the elements that overlap `start..end`, in order. Each element of text is one Unicode scalar or
+/// block marker. Text positions count in the document's text encoding, so a range that starts inside a scalar
+/// includes that scalar.
 fn element_ids(
     doc: &am::AutoCommit,
     obj: &am::ObjId,

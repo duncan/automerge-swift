@@ -76,6 +76,13 @@
 - ``position(obj:cursor:)``
 - ``position(obj:cursor:heads:)``
 
+### Identifying elements
+
+- ``elementIds(obj:range:)``
+- ``elementIds(obj:range:heads:)``
+- ``position(obj:elementId:)``
+- ``position(obj:elementId:heads:)``
+
 ### Updating counters
 
 - ``increment(obj:key:by:)``

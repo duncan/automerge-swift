@@ -352,6 +352,26 @@ void uniffi_uniffi_automerge_fn_method_doc_delete_in_map(void*_Nonnull ptr, Rust
 RustBuffer uniffi_uniffi_automerge_fn_method_doc_difference(void*_Nonnull ptr, RustBuffer before, RustBuffer after, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_ELEMENT_IDS
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_ELEMENT_IDS
+RustBuffer uniffi_uniffi_automerge_fn_method_doc_element_ids(void*_Nonnull ptr, RustBuffer obj, uint64_t start, uint64_t end, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_ELEMENT_IDS_AT
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_ELEMENT_IDS_AT
+RustBuffer uniffi_uniffi_automerge_fn_method_doc_element_ids_at(void*_Nonnull ptr, RustBuffer obj, uint64_t start, uint64_t end, RustBuffer heads, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_ELEMENT_POSITION
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_ELEMENT_POSITION
+RustBuffer uniffi_uniffi_automerge_fn_method_doc_element_position(void*_Nonnull ptr, RustBuffer obj, RustBuffer id, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_ELEMENT_POSITION_AT
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_ELEMENT_POSITION_AT
+RustBuffer uniffi_uniffi_automerge_fn_method_doc_element_position_at(void*_Nonnull ptr, RustBuffer obj, RustBuffer id, RustBuffer heads, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_ENCODE_CHANGES_SINCE
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_ENCODE_CHANGES_SINCE
 RustBuffer uniffi_uniffi_automerge_fn_method_doc_encode_changes_since(void*_Nonnull ptr, RustBuffer heads, RustCallStatus *_Nonnull out_status
@@ -1035,6 +1055,30 @@ uint16_t uniffi_uniffi_automerge_checksum_method_doc_delete_in_map(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_DIFFERENCE
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_DIFFERENCE
 uint16_t uniffi_uniffi_automerge_checksum_method_doc_difference(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_ELEMENT_IDS
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_ELEMENT_IDS
+uint16_t uniffi_uniffi_automerge_checksum_method_doc_element_ids(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_ELEMENT_IDS_AT
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_ELEMENT_IDS_AT
+uint16_t uniffi_uniffi_automerge_checksum_method_doc_element_ids_at(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_ELEMENT_POSITION
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_ELEMENT_POSITION
+uint16_t uniffi_uniffi_automerge_checksum_method_doc_element_position(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_ELEMENT_POSITION_AT
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_ELEMENT_POSITION_AT
+uint16_t uniffi_uniffi_automerge_checksum_method_doc_element_position_at(void
     
 );
 #endif

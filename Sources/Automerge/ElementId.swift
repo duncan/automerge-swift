@@ -8,8 +8,10 @@ typealias FfiElementId = AutomergeUniffi.ElementId
 /// operation counter. It stays the same wherever the element moves as others insert and delete around it, so you can
 /// use it to find the element again, even after merging changes from other collaborators.
 ///
-/// In a text object, each character and each block marker is an element, and keeps its identifier for as long as it
-/// exists. In an array, setting a new value at an index gives that element a new identifier.
+/// In a text object, each Unicode scalar and each block marker is an element, and keeps its identifier for as long as
+/// it exists. A Swift `Character` can hold several scalars, such as a letter and its combining accent, or the two
+/// halves of a flag, so it can be several elements. In an array, setting a new value at an index gives that element a
+/// new identifier.
 ///
 /// Read the identifiers of elements with ``Document/elementIds(obj:range:)``, and find an element's current position
 /// with ``Document/position(obj:elementId:)``.

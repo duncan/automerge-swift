@@ -745,9 +745,10 @@ public final class Document: @unchecked Sendable {
     /// with ``position(obj:elementId:)``, for example to remove exactly the text you inserted, even after a
     /// collaborator typed inside it.
     ///
-    /// In a text object, the range counts in the document's ``TextEncoding``. If the range starts or ends inside a
-    /// character, such as between the two halves of a surrogate pair in UTF-16, the result includes that character.
-    /// Each block marker is one element.
+    /// In a text object, the range counts in the document's ``TextEncoding``. Each Unicode scalar is one element, as
+    /// is each block marker, so a Swift `Character` that holds several scalars, such as a letter and its combining
+    /// accent, is several elements. If the range starts or ends inside a scalar, such as between the two halves of a
+    /// surrogate pair in UTF-16, the result includes that scalar.
     ///
     /// - Parameters:
     ///   - obj: The object identifier of the array or text object.
@@ -771,9 +772,10 @@ public final class Document: @unchecked Sendable {
     /// Reads the identifiers of the elements in a range of the array or text object you provide, as they were at the
     /// point in time you provide.
     ///
-    /// In a text object, the range counts in the document's ``TextEncoding``. If the range starts or ends inside a
-    /// character, such as between the two halves of a surrogate pair in UTF-16, the result includes that character.
-    /// Each block marker is one element.
+    /// In a text object, the range counts in the document's ``TextEncoding``. Each Unicode scalar is one element, as
+    /// is each block marker, so a Swift `Character` that holds several scalars, such as a letter and its combining
+    /// accent, is several elements. If the range starts or ends inside a scalar, such as between the two halves of a
+    /// surrogate pair in UTF-16, the result includes that scalar.
     ///
     /// - Parameters:
     ///   - obj: The object identifier of the array or text object.

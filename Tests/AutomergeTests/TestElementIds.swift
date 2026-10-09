@@ -57,6 +57,17 @@ class ElementIdsTestCase: XCTestCase {
         XCTAssertEqual(try doc.elementIds(obj: text, range: 2 ..< 4), [ids[1], ids[2]])
     }
 
+    func testEachUnicodeScalarIsOneElement() throws {
+        // A combining accent and a flag are each one Character, but two Unicode scalars.
+        let doc = Document(textEncoding: .utf16)
+        let text = try doc.putObject(obj: ObjId.ROOT, key: "text", ty: .Text)
+        try doc.spliceText(obj: text, start: 0, delete: 0, value: "e\u{301}🇫🇮")
+
+        let ids = try doc.elementIds(obj: text, range: 0 ..< 6)
+        XCTAssertEqual(ids.count, 4)
+        XCTAssertEqual(try ids.map { try doc.position(obj: text, elementId: $0) }, [0, 1, 2, 4])
+    }
+
     func testElementIdsIgnoreTheRangePastTheEnd() throws {
         let doc = Document()
         let text = try doc.putObject(obj: ObjId.ROOT, key: "text", ty: .Text)

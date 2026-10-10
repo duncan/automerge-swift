@@ -78,7 +78,7 @@ public final class Document: @unchecked Sendable {
 
     /// Creates an new, empty Automerge document.
     /// - Parameters:
-    ///   - textEncoding: The encoding type for text within the document. Defaults to `.unicodeCodePoint`.
+    ///   - textEncoding: The encoding type for text within the document. Defaults to ``TextEncoding/unicodeScalar``.
     ///   - logLevel: The level at which to generate logs into unified logging from actions within this document.
     public init(textEncoding: TextEncoding = .unicodeScalar, logLevel: LogVerbosity = .errorOnly) {
         doc = WrappedDoc(Doc.newWithTextEncoding(textEncoding: textEncoding.ffi_textEncoding))
@@ -92,11 +92,33 @@ public final class Document: @unchecked Sendable {
     /// of
     /// ``encodeChangesSince(heads:)``, ``encodeNewChanges()``, or
     /// any sequence of bytes containing valid encodings of automerge changes.
+    ///
+    /// The document uses the default text encoding, ``TextEncoding/unicodeScalar``, because the data doesn't record
+    /// the encoding a document was created with. To load a document with another encoding, use
+    /// ``init(_:textEncoding:logLevel:)``.
     /// - Parameters:
     ///   - bytes: A data buffer of encoded automerge changes.
     ///   - logLevel: The level at which to generate logs into unified logging from actions within this document.
     public init(_ bytes: Data, logLevel: LogVerbosity = .errorOnly) throws {
         doc = try WrappedDoc { try Doc.load(bytes: Array(bytes)) }
+        self.reportingLogLevel = logLevel
+    }
+
+    /// Creates a new document from the data that you provide, using the text encoding you choose.
+    ///
+    /// The text encoding determines the units of every text position and length, such as the indices you pass to
+    /// ``spliceText(obj:start:delete:value:)`` and the bounds of each ``Mark``. It isn't stored in the document's
+    /// data, so load a document with the encoding it was created with to keep those positions the same. For example,
+    /// a document created with ``TextEncoding/utf16``, to match `NSString` and `NSRange`, keeps UTF-16 positions only
+    /// if you load it with ``TextEncoding/utf16``.
+    /// - Parameters:
+    ///   - bytes: A data buffer of encoded automerge changes.
+    ///   - textEncoding: The encoding type for text within the document.
+    ///   - logLevel: The level at which to generate logs into unified logging from actions within this document.
+    public init(_ bytes: Data, textEncoding: TextEncoding, logLevel: LogVerbosity = .errorOnly) throws {
+        doc = try WrappedDoc {
+            try Doc.loadWithTextEncoding(bytes: Array(bytes), textEncoding: textEncoding.ffi_textEncoding)
+        }
         self.reportingLogLevel = logLevel
     }
 
@@ -306,14 +328,16 @@ public final class Document: @unchecked Sendable {
         }
     }
 
-    /// Get the value at the index position you provide from the array object you specify.
+    /// Get the value at the index position you provide from the array or text object you specify.
     ///
     /// - Parameters:
-    ///   - obj: The identifier of the array object.
-    ///   - index: The index position within the array.
-    /// - Returns: The value of the key, or `nil` if the key doesn't exist in the dictionary.
+    ///   - obj: The identifier of the array or text object.
+    ///   - index: The index position within the array or text.
+    /// - Returns: The value at the index, or `nil` if the index is beyond the end of the array or text.
     ///
-    /// If you request a index beyond the bounds of the array, this method throws an error.
+    /// In a text object, the index counts in the document's ``TextEncoding``, and the value is the character at that
+    /// index as a ``ScalarValue/String(_:)``, or a block marker as a ``Value/Object(_:_:)`` map. An index inside a
+    /// character returns that character.
     ///
     /// > Tip: Note that if there are multiple conflicting values this method
     /// will return one of them  arbitrarily (but deterministically). If you
@@ -338,14 +362,17 @@ public final class Document: @unchecked Sendable {
         }
     }
 
-    /// Get the set of possibly conflicting values at the index you provide for the array object you specify.
+    /// Get the set of possibly conflicting values at the index you provide for the array or text object you specify.
     ///
     /// - Parameters:
-    ///   - obj: The identifier of the array object.
-    ///   - index: The index position within the array.
-    /// - Returns: A set of the values at that index.
+    ///   - obj: The identifier of the array or text object.
+    ///   - index: The index position within the array or text.
+    /// - Returns: A set of the values at that index, or an empty set if the index is beyond the end of the array or
+    /// text.
     ///
-    /// If you request a index beyond the bounds of the array, this method throws an error.
+    /// In a text object, the index counts in the document's ``TextEncoding``, and the value is the character at that
+    /// index as a ``ScalarValue/String(_:)``, or a block marker as a ``Value/Object(_:_:)`` map. An index inside a
+    /// character returns that character.
     public func getAll(obj: ObjId, index: UInt64) throws -> Set<Value> {
         try lock {
             let vals = try self.doc.wrapErrors { try $0.getAllInList(obj: obj.bytes, index: index) }
@@ -378,15 +405,19 @@ public final class Document: @unchecked Sendable {
         }
     }
 
-    /// Get the historical value at of the index you provide in the array object and point in time you specify.
+    /// Get the historical value at of the index you provide in the array or text object and point in time you specify.
     ///
     /// - Parameters:
-    ///   - obj: The identifier of the array object.
-    ///   - index: The index position within the array.
+    ///   - obj: The identifier of the array or text object.
+    ///   - index: The index position within the array or text.
     ///   - heads: The set of ``ChangeHash`` that represents a point of time in the history the document.
     /// - Returns: The value of the index at the point in time you provide, or `nil` if the value doesn't exist.
     ///
     /// Use the method ``heads()`` to capture a specific point in time in order to use this method.
+    ///
+    /// In a text object, the index counts in the document's ``TextEncoding``, and the value is the character at that
+    /// index as a ``ScalarValue/String(_:)``, or a block marker as a ``Value/Object(_:_:)`` map. An index inside a
+    /// character returns that character.
     ///
     /// > Tip: Note that if there are multiple conflicting values this method
     /// will return one of them  arbitrarily (but deterministically). If you
@@ -424,15 +455,19 @@ public final class Document: @unchecked Sendable {
         }
     }
 
-    /// Get the historical value at of the index you provide, in the array object and point of time you specify.
+    /// Get the historical value at of the index you provide, in the array or text object and point of time you specify.
     ///
     /// - Parameters:
-    ///   - obj: The identifier of the array object.
-    ///   - index: The index position within the array.
+    ///   - obj: The identifier of the array or text object.
+    ///   - index: The index position within the array or text.
     ///   - heads: The set of ``ChangeHash`` that represents a point of time in the history the document.
     /// - Returns: The set of possibly conflicting values of the index at the point in time you provide.
     ///
     /// Use the method ``heads()`` to capture a specific point in time in order to use this method.
+    ///
+    /// In a text object, the index counts in the document's ``TextEncoding``, and the value is the character at that
+    /// index as a ``ScalarValue/String(_:)``, or a block marker as a ``Value/Object(_:_:)`` map. An index inside a
+    /// character returns that character.
     public func getAllAt(obj: ObjId, index: UInt64, heads: Set<ChangeHash>)
         throws -> Set<Value>
     {
@@ -700,6 +735,113 @@ public final class Document: @unchecked Sendable {
         try lock {
             try self.doc.wrapErrors {
                 try $0.cursorPositionAt(obj: obj.bytes, cursor: cursor.bytes, heads: heads.map(\.bytes))
+            }
+        }
+    }
+
+    /// Reads the identifiers of the elements in a range of the array or text object you provide.
+    ///
+    /// An element's identifier stays the same as others insert and delete around it. Use it to find the element again
+    /// with ``position(obj:elementId:)``, for example to remove exactly the text you inserted, even after a
+    /// collaborator typed inside it.
+    ///
+    /// In a text object, the range counts in the document's ``TextEncoding``. Each Unicode scalar is one element, as
+    /// is each block marker, so a Swift `Character` that holds several scalars, such as a letter and its combining
+    /// accent, is several elements. If the range starts or ends inside a scalar, such as between the two halves of a
+    /// surrogate pair in UTF-16, the result includes that scalar.
+    ///
+    /// - Parameters:
+    ///   - obj: The object identifier of the array or text object.
+    ///   - range: The range of indexes in the array, or of positions in the text object based on ``TextEncoding``.
+    ///     The part of the range past the end of the object is ignored.
+    /// - Returns: The identifiers of the elements that overlap the range, in order.
+    ///
+    /// ### See Also
+    /// ``elementIds(obj:range:heads:)``
+    /// ``position(obj:elementId:)``
+    ///
+    public func elementIds(obj: ObjId, range: Range<UInt64>) throws -> [ElementId] {
+        try lock {
+            try self.doc.wrapErrors {
+                try $0.elementIds(obj: obj.bytes, start: range.lowerBound, end: range.upperBound)
+                    .map(ElementId.init(ffi:))
+            }
+        }
+    }
+
+    /// Reads the identifiers of the elements in a range of the array or text object you provide, as they were at the
+    /// point in time you provide.
+    ///
+    /// In a text object, the range counts in the document's ``TextEncoding``. Each Unicode scalar is one element, as
+    /// is each block marker, so a Swift `Character` that holds several scalars, such as a letter and its combining
+    /// accent, is several elements. If the range starts or ends inside a scalar, such as between the two halves of a
+    /// surrogate pair in UTF-16, the result includes that scalar.
+    ///
+    /// - Parameters:
+    ///   - obj: The object identifier of the array or text object.
+    ///   - range: The range of indexes in the array, or of positions in the text object based on ``TextEncoding``.
+    ///     The part of the range past the end of the object is ignored.
+    ///   - heads: The set of ``ChangeHash`` that represents a point of time in the history the document.
+    /// - Returns: The identifiers of the elements that overlapped the range at that point in time, in order.
+    ///
+    /// ### See Also
+    /// ``elementIds(obj:range:)``
+    /// ``position(obj:elementId:heads:)``
+    ///
+    public func elementIds(obj: ObjId, range: Range<UInt64>, heads: Set<ChangeHash>) throws -> [ElementId] {
+        try lock {
+            try self.doc.wrapErrors {
+                try $0.elementIdsAt(
+                    obj: obj.bytes,
+                    start: range.lowerBound,
+                    end: range.upperBound,
+                    heads: heads.map(\.bytes)
+                )
+                .map(ElementId.init(ffi:))
+            }
+        }
+    }
+
+    /// Finds the current position of an element in the array or text object you provide.
+    ///
+    /// - Parameters:
+    ///   - obj: The object identifier of the array or text object that holds the element.
+    ///   - elementId: The identifier of the element, from ``elementIds(obj:range:)``.
+    /// - Returns: The element's index in the array, or its start position in the text object based on
+    ///   ``TextEncoding``, or `nil` if the object doesn't hold the element, because it was deleted or belongs to
+    ///   another object.
+    ///
+    /// ### See Also
+    /// ``position(obj:elementId:heads:)``
+    /// ``elementIds(obj:range:)``
+    ///
+    public func position(obj: ObjId, elementId: ElementId) throws -> UInt64? {
+        try lock {
+            try self.doc.wrapErrors {
+                try $0.elementPosition(obj: obj.bytes, id: elementId.toFfi())
+            }
+        }
+    }
+
+    /// Finds the position of an element in the array or text object you provide, as it was at the point in time you
+    /// provide.
+    ///
+    /// - Parameters:
+    ///   - obj: The object identifier of the array or text object that holds the element.
+    ///   - elementId: The identifier of the element, from ``elementIds(obj:range:)``.
+    ///   - heads: The set of ``ChangeHash`` that represents a point of time in the history the document.
+    /// - Returns: The element's index in the array, or its start position in the text object based on
+    ///   ``TextEncoding``, at that point in time, or `nil` if the object didn't hold the element then, because it
+    ///   was deleted, didn't exist yet, or belongs to another object.
+    ///
+    /// ### See Also
+    /// ``position(obj:elementId:)``
+    /// ``elementIds(obj:range:heads:)``
+    ///
+    public func position(obj: ObjId, elementId: ElementId, heads: Set<ChangeHash>) throws -> UInt64? {
+        try lock {
+            try self.doc.wrapErrors {
+                try $0.elementPositionAt(obj: obj.bytes, id: elementId.toFfi(), heads: heads.map(\.bytes))
             }
         }
     }
@@ -983,6 +1125,162 @@ public final class Document: @unchecked Sendable {
         try marksAt(obj: obj, position: position, heads: heads())
     }
 
+    /// Inserts a block marker into a text object, and returns the identifier of the new block's map.
+    ///
+    /// A block marker divides rich text into blocks, such as paragraphs, headings, and list items.
+    /// It occupies one position in the text object, and reads as the object replacement character (`U+FFFC`) from
+    /// ``text(obj:)``. The new block is an empty map; write its contents through the identifier this method returns.
+    /// By convention, shared with Automerge's JavaScript library, a block holds a `type` string, a `parents` list of
+    /// strings, and an `attrs` map.
+    ///
+    /// - Parameters:
+    ///   - obj: The identifier of the text object.
+    ///   - index: The position at which to insert the block marker.
+    /// - Returns: The identifier of the new block's map.
+    @discardableResult
+    public func splitBlock(obj: ObjId, index: UInt64) throws -> ObjId {
+        try lock {
+            sendObjectWillChange()
+            defer { sendObjectDidChange() }
+            return try self.doc.wrapErrors {
+                try ObjId(bytes: $0.splitBlock(obj: obj.bytes, index: index))
+            }
+        }
+    }
+
+    /// Inserts a block marker with the contents you provide into a text object, and returns the identifier of the
+    /// new block's map.
+    ///
+    /// The marker and its contents are written in the same change, so any objects within the block, such as an
+    /// `attrs` map, are created by one actor only.
+    ///
+    /// - Parameters:
+    ///   - obj: The identifier of the text object.
+    ///   - index: The position at which to insert the block marker.
+    ///   - block: The contents of the block, for example
+    /// `["type": .scalar(.String("paragraph")), "parents": .array([]), "attrs": .dict([:])]`.
+    /// - Returns: The identifier of the new block's map.
+    @discardableResult
+    public func splitBlock(obj: ObjId, index: UInt64, block: [String: AutomergeValue]) throws -> ObjId {
+        try lock {
+            sendObjectWillChange()
+            defer { sendObjectDidChange() }
+            return try self.doc.wrapErrors {
+                try ObjId(bytes: $0.splitBlockWithValue(
+                    obj: obj.bytes,
+                    index: index,
+                    block: block.mapValues { $0.toFfi() }
+                ))
+            }
+        }
+    }
+
+    /// Removes the block marker at the position you provide, joining its text to the block before it.
+    ///
+    /// - Parameters:
+    ///   - obj: The identifier of the text object.
+    ///   - index: The position of the block marker.
+    ///
+    /// The method throws a ``DocError`` if the element at `index` isn't a block marker.
+    public func joinBlock(obj: ObjId, index: UInt64) throws {
+        try lock {
+            sendObjectWillChange()
+            defer { sendObjectDidChange() }
+            try self.doc.wrapErrors {
+                try $0.joinBlock(obj: obj.bytes, index: index)
+            }
+        }
+    }
+
+    /// Replaces the block marker at the position you provide with a new marker holding the contents you provide, and
+    /// returns the identifier of the new block's map.
+    ///
+    /// This matches `updateBlock` in Automerge's JavaScript library: it removes the existing marker and inserts a new
+    /// one in its place. If another actor concurrently updates the same block, both new markers remain after a merge,
+    /// and concurrent edits to objects within the old block are not carried into the new one.
+    /// To change part of a block in place, write to its map, or to maps within it, directly.
+    ///
+    /// - Parameters:
+    ///   - obj: The identifier of the text object.
+    ///   - index: The position of the block marker.
+    ///   - block: The new contents of the block.
+    /// - Returns: The identifier of the new block's map.
+    ///
+    /// The method throws a ``DocError`` if the element at `index` isn't a block marker.
+    @discardableResult
+    public func updateBlock(obj: ObjId, index: UInt64, block: [String: AutomergeValue]) throws -> ObjId {
+        try lock {
+            sendObjectWillChange()
+            defer { sendObjectDidChange() }
+            return try self.doc.wrapErrors {
+                try ObjId(bytes: $0.updateBlock(
+                    obj: obj.bytes,
+                    index: index,
+                    block: block.mapValues { $0.toFfi() }
+                ))
+            }
+        }
+    }
+
+    /// Returns the contents of the block marker at the position you provide, or `nil` if the element at that position
+    /// isn't a block marker.
+    ///
+    /// - Parameters:
+    ///   - obj: The identifier of the text object.
+    ///   - index: The position in the text object.
+    /// - Returns: The contents of the block, or `nil`.
+    public func block(obj: ObjId, index: UInt64) throws -> [String: AutomergeValue]? {
+        try lock {
+            try self.doc.wrapErrors {
+                try $0.getBlock(obj: obj.bytes, index: index)?.mapValues(AutomergeValue.fromFfi)
+            }
+        }
+    }
+
+    /// Returns the contents of the block marker at the position you provide, at a point in time in the document's
+    /// history, or `nil` if the element at that position isn't a block marker.
+    ///
+    /// - Parameters:
+    ///   - obj: The identifier of the text object.
+    ///   - index: The position in the text object.
+    ///   - heads: The set of ``ChangeHash`` that represents a point of time in the history the document.
+    /// - Returns: The contents of the block, or `nil`.
+    public func blockAt(obj: ObjId, index: UInt64, heads: Set<ChangeHash>) throws -> [String: AutomergeValue]? {
+        try lock {
+            try self.doc.wrapErrors {
+                try $0.getBlockAt(obj: obj.bytes, index: index, heads: heads.map(\.bytes))?
+                    .mapValues(AutomergeValue.fromFfi)
+            }
+        }
+    }
+
+    /// Returns the contents of a text object as spans: block markers, and runs of text with the marks that apply to
+    /// them.
+    ///
+    /// - Parameter obj: The identifier of the text object.
+    /// - Returns: The text object's contents, in order, as a list of ``Span``.
+    public func spans(obj: ObjId) throws -> [Span] {
+        try lock {
+            try self.doc.wrapErrors {
+                try $0.spans(obj: obj.bytes).map(Span.fromFfi)
+            }
+        }
+    }
+
+    /// Returns the contents of a text object as spans at a point in time in the document's history.
+    ///
+    /// - Parameters:
+    ///   - obj: The identifier of the text object.
+    ///   - heads: The set of ``ChangeHash`` that represents a point of time in the history the document.
+    /// - Returns: The text object's contents at that point in time, in order, as a list of ``Span``.
+    public func spansAt(obj: ObjId, heads: Set<ChangeHash>) throws -> [Span] {
+        try lock {
+            try self.doc.wrapErrors {
+                try $0.spansAt(obj: obj.bytes, heads: heads.map(\.bytes)).map(Span.fromFfi)
+            }
+        }
+    }
+
     /// Commit the auto-generated transaction with options.
     ///
     /// - Parameters:
@@ -1083,7 +1381,7 @@ public final class Document: @unchecked Sendable {
     ///
     /// - Parameter heads: The set of ``ChangeHash`` that represents a point of time in the history the document.
     /// - Returns: A copy of the document with a new actor ID that contains the changes up to the point in time you
-    /// specify.
+    /// specify. The copy uses the same text encoding as this document.
     public func forkAt(heads: Set<ChangeHash>) throws -> Document {
         try lock {
             try self.doc.wrapErrors {

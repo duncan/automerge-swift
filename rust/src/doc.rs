@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 
 use automerge::{self as am, sync::SyncDoc, CursorPosition};
@@ -5,8 +6,10 @@ use automerge::{transaction::Transactable, ReadDoc};
 
 use crate::actor_id::ActorId;
 use crate::cursor::Position;
+use crate::element_id::ElementId;
 use crate::mark::{ExpandMark, KeyValue, Mark};
 use crate::patches::Patch;
+use crate::span::{hydrated_map, map_into_hydrate, HydratedValue, Span};
 use crate::text_encoding::TextEncoding;
 
 use crate::{
@@ -174,7 +177,7 @@ impl Doc {
     pub fn get_in_list(&self, obj: ObjId, idx: u64) -> Result<Option<Value>, DocError> {
         let obj = am::ObjId::from(obj);
         let doc = self.0.read().unwrap();
-        assert_list(&*doc, &obj)?;
+        assert_sequence(&*doc, &obj)?;
         Ok(doc.get(obj, idx as usize)?.map(|v| v.into()))
     }
 
@@ -200,7 +203,7 @@ impl Doc {
         let obj = am::ObjId::from(obj);
         let doc = self.0.read().unwrap();
         let heads = heads.into_iter().map(|h| h.into()).collect::<Vec<_>>();
-        assert_list(&*doc, &obj)?;
+        assert_sequence(&*doc, &obj)?;
         Ok(doc.get_at(obj, idx as usize, &heads)?.map(|v| v.into()))
     }
 
@@ -218,7 +221,7 @@ impl Doc {
     pub fn get_all_in_list(&self, obj: ObjId, index: u64) -> Result<Vec<Value>, DocError> {
         let obj = am::ObjId::from(obj);
         let doc = self.0.read().unwrap();
-        assert_list(&*doc, &obj)?;
+        assert_sequence(&*doc, &obj)?;
         let vals = doc.get_all(&obj, index as usize)?;
         Ok(vals
             .into_iter()
@@ -255,7 +258,7 @@ impl Doc {
             .into_iter()
             .map(am::ChangeHash::from)
             .collect::<Vec<_>>();
-        assert_list(&*doc, &obj)?;
+        assert_sequence(&*doc, &obj)?;
         let vals = doc.get_all_at(&obj, index as usize, heads.as_slice())?;
         Ok(vals.into_iter().map(Value::from).collect::<Vec<_>>())
     }
@@ -410,6 +413,54 @@ impl Doc {
             .map_err(|error| DocError::Internal(error))
     }
 
+    pub fn element_ids(
+        &self,
+        obj: ObjId,
+        start: u64,
+        end: u64,
+    ) -> Result<Vec<ElementId>, DocError> {
+        let obj = am::ObjId::from(obj);
+        let doc = self.0.read().unwrap();
+        element_ids(&doc, &obj, start, end, None)
+    }
+
+    pub fn element_ids_at(
+        &self,
+        obj: ObjId,
+        start: u64,
+        end: u64,
+        heads: Vec<ChangeHash>,
+    ) -> Result<Vec<ElementId>, DocError> {
+        let obj = am::ObjId::from(obj);
+        let doc = self.0.read().unwrap();
+        let heads = heads
+            .into_iter()
+            .map(am::ChangeHash::from)
+            .collect::<Vec<_>>();
+        element_ids(&doc, &obj, start, end, Some(&heads))
+    }
+
+    pub fn element_position(&self, obj: ObjId, id: ElementId) -> Result<Option<u64>, DocError> {
+        let obj = am::ObjId::from(obj);
+        let doc = self.0.read().unwrap();
+        element_position(&doc, &obj, id, None)
+    }
+
+    pub fn element_position_at(
+        &self,
+        obj: ObjId,
+        id: ElementId,
+        heads: Vec<ChangeHash>,
+    ) -> Result<Option<u64>, DocError> {
+        let obj = am::ObjId::from(obj);
+        let doc = self.0.read().unwrap();
+        let heads = heads
+            .into_iter()
+            .map(am::ChangeHash::from)
+            .collect::<Vec<_>>();
+        element_position(&doc, &obj, id, Some(&heads))
+    }
+
     pub fn text(&self, obj: ObjId) -> Result<String, DocError> {
         let obj = am::ObjId::from(obj);
         let doc = self.0.read().unwrap();
@@ -526,27 +577,106 @@ impl Doc {
             .map(am::ChangeHash::from)
             .collect::<Vec<_>>();
         let index = match position {
-            Position::Cursor { position: cursor } => doc
-                .get_cursor_position(obj.clone(), &cursor.into(), Some(&heads))
-                .unwrap() as usize,
+            Position::Cursor { position: cursor } => {
+                doc.get_cursor_position(obj.clone(), &cursor.into(), Some(&heads))?
+            }
             Position::Index { position: index } => index as usize,
         };
-        let markset = doc.get_marks(obj, index, Some(&heads)).unwrap();
+        let markset = doc.get_marks(obj, index, Some(&heads))?;
         Ok(Mark::from_markset(markset, index as u64))
     }
 
-    pub fn split_block(&self, obj: ObjId, index: u32) -> Result<ObjId, DocError> {
+    pub fn split_block(&self, obj: ObjId, index: u64) -> Result<ObjId, DocError> {
         let mut doc = self.0.write().unwrap();
         let obj = am::ObjId::from(obj);
-        let id = doc.split_block(obj, index.try_into().unwrap())?;
+        assert_text(&*doc, &obj)?;
+        let id = doc.split_block(obj, index as usize)?;
         Ok(id.into())
     }
 
-    pub fn join_block(&self, obj: ObjId, index: u32) -> Result<(), DocError> {
+    pub fn split_block_with_value(
+        &self,
+        obj: ObjId,
+        index: u64,
+        block: HashMap<String, HydratedValue>,
+    ) -> Result<ObjId, DocError> {
         let mut doc = self.0.write().unwrap();
         let obj = am::ObjId::from(obj);
-        doc.join_block(obj, index.try_into().unwrap())?;
+        assert_text(&*doc, &obj)?;
+        let block = map_into_hydrate(block, doc.text_encoding());
+        let id = doc.split_block(obj, index as usize)?;
+        doc.update_object(&id, &block).map_err(DocError::from)?;
+        Ok(id.into())
+    }
+
+    pub fn join_block(&self, obj: ObjId, index: u64) -> Result<(), DocError> {
+        let mut doc = self.0.write().unwrap();
+        let obj = am::ObjId::from(obj);
+        assert_text(&*doc, &obj)?;
+        assert_block(&*doc, &obj, index)?;
+        doc.join_block(obj, index as usize)?;
         Ok(())
+    }
+
+    pub fn update_block(
+        &self,
+        obj: ObjId,
+        index: u64,
+        block: HashMap<String, HydratedValue>,
+    ) -> Result<ObjId, DocError> {
+        let mut doc = self.0.write().unwrap();
+        let obj = am::ObjId::from(obj);
+        assert_text(&*doc, &obj)?;
+        assert_block(&*doc, &obj, index)?;
+        let block = map_into_hydrate(block, doc.text_encoding());
+        let id = doc.replace_block(obj, index as usize)?;
+        doc.update_object(&id, &block).map_err(DocError::from)?;
+        Ok(id.into())
+    }
+
+    pub fn get_block(
+        &self,
+        obj: ObjId,
+        index: u64,
+    ) -> Result<Option<HashMap<String, HydratedValue>>, DocError> {
+        let doc = self.0.read().unwrap();
+        let obj = am::ObjId::from(obj);
+        assert_text(&*doc, &obj)?;
+        block_value(&*doc, &obj, index, None)
+    }
+
+    pub fn get_block_at(
+        &self,
+        obj: ObjId,
+        index: u64,
+        heads: Vec<ChangeHash>,
+    ) -> Result<Option<HashMap<String, HydratedValue>>, DocError> {
+        let doc = self.0.read().unwrap();
+        let obj = am::ObjId::from(obj);
+        assert_text(&*doc, &obj)?;
+        let heads = heads
+            .into_iter()
+            .map(am::ChangeHash::from)
+            .collect::<Vec<_>>();
+        block_value(&*doc, &obj, index, Some(&heads))
+    }
+
+    pub fn spans(&self, obj: ObjId) -> Result<Vec<Span>, DocError> {
+        let doc = self.0.read().unwrap();
+        let obj = am::ObjId::from(obj);
+        assert_text(&*doc, &obj)?;
+        Ok(doc.spans(obj)?.map(Span::from).collect())
+    }
+
+    pub fn spans_at(&self, obj: ObjId, heads: Vec<ChangeHash>) -> Result<Vec<Span>, DocError> {
+        let doc = self.0.read().unwrap();
+        let obj = am::ObjId::from(obj);
+        assert_text(&*doc, &obj)?;
+        let heads = heads
+            .into_iter()
+            .map(am::ChangeHash::from)
+            .collect::<Vec<_>>();
+        Ok(doc.spans_at(obj, &heads)?.map(Span::from).collect())
     }
 
     pub fn merge(&self, other: Arc<Self>) -> Result<(), DocError> {
@@ -582,6 +712,15 @@ impl Doc {
 
     pub fn load(bytes: Vec<u8>) -> Result<Self, LoadError> {
         let ac = automerge::AutoCommit::load(bytes.as_slice())?;
+        Ok(Doc(RwLock::new(ac)))
+    }
+
+    pub fn load_with_text_encoding(
+        bytes: Vec<u8>,
+        text_encoding: TextEncoding,
+    ) -> Result<Self, LoadError> {
+        let options = am::LoadOptions::new().text_encoding(text_encoding.into());
+        let ac = automerge::AutoCommit::load_with_options(bytes.as_slice(), options)?;
         Ok(Doc(RwLock::new(ac)))
     }
 
@@ -632,7 +771,14 @@ impl Doc {
             .into_iter()
             .map(am::ChangeHash::from)
             .collect::<Vec<_>>();
-        let new = doc.fork_at(&heads)?;
+        let mut new = doc.fork_at(&heads)?;
+        // automerge 0.7's fork_at creates the fork with the default text encoding. Later versions keep the
+        // document's encoding, and then this does nothing.
+        let text_encoding = doc.text_encoding();
+        if new.text_encoding() != text_encoding {
+            let options = am::LoadOptions::new().text_encoding(text_encoding);
+            new = automerge::AutoCommit::load_with_options(&new.save(), options)?;
+        }
         Ok(Arc::new(Self(RwLock::new(new))))
     }
 
@@ -751,9 +897,172 @@ fn assert_list<R: am::ReadDoc>(doc: &R, obj: &am::ObjId) -> Result<(), DocError>
     }
 }
 
+/// Checks that an object is a list or text. Reading a text element by index returns a character as a string
+/// scalar, or a block marker as its map. Indexes in text count in the document's text encoding.
+fn assert_sequence<R: am::ReadDoc>(doc: &R, obj: &am::ObjId) -> Result<(), DocError> {
+    match doc.object_type(obj)? {
+        am::ObjType::List | am::ObjType::Text => Ok(()),
+        _ => Err(DocError::WrongObjectType),
+    }
+}
+
 fn assert_text<R: am::ReadDoc>(doc: &R, obj: &am::ObjId) -> Result<(), DocError> {
     match doc.object_type(obj)? {
         am::ObjType::Text => Ok(()),
         _ => Err(DocError::WrongObjectType),
     }
+}
+
+/// Checks that the element at `index` in a text object is a block marker. The core's `join_block`
+/// deletes whatever element is at the index, so without this check it would delete a character.
+fn assert_block<R: am::ReadDoc>(doc: &R, text: &am::ObjId, index: u64) -> Result<(), DocError> {
+    match doc.get(text, index as usize)? {
+        Some((am::Value::Object(am::ObjType::Map), _)) => Ok(()),
+        _ => Err(DocError::WrongObjectType),
+    }
+}
+
+fn block_value<R: am::ReadDoc>(
+    doc: &R,
+    text: &am::ObjId,
+    index: u64,
+    heads: Option<&[am::ChangeHash]>,
+) -> Result<Option<HashMap<String, HydratedValue>>, DocError> {
+    let element = match heads {
+        Some(heads) => doc.get_at(text, index as usize, heads)?,
+        None => doc.get(text, index as usize)?,
+    };
+    let Some((am::Value::Object(am::ObjType::Map), id)) = element else {
+        return Ok(None);
+    };
+    match doc.hydrate(&id, heads)? {
+        am::hydrate::Value::Map(map) => Ok(Some(hydrated_map(&map))),
+        _ => Ok(None),
+    }
+}
+
+impl From<am::error::UpdateObjectError> for DocError {
+    fn from(value: am::error::UpdateObjectError) -> Self {
+        match value {
+            am::error::UpdateObjectError::ChangeType => DocError::WrongObjectType,
+            am::error::UpdateObjectError::Automerge(e) => DocError::Internal(e),
+        }
+    }
+}
+
+/// Checks that an object is a list or text, and returns whether it's text.
+fn is_text<R: am::ReadDoc>(doc: &R, obj: &am::ObjId) -> Result<bool, DocError> {
+    match doc.object_type(obj)? {
+        am::ObjType::List => Ok(false),
+        am::ObjType::Text => Ok(true),
+        _ => Err(DocError::WrongObjectType),
+    }
+}
+
+fn get_element(
+    doc: &am::AutoCommit,
+    obj: &am::ObjId,
+    index: usize,
+    heads: Option<&[am::ChangeHash]>,
+) -> Result<Option<(am::Value<'static>, am::ObjId)>, DocError> {
+    let element = match heads {
+        Some(heads) => doc.get_at(obj, index, heads)?,
+        None => doc.get(obj, index)?,
+    };
+    Ok(element.map(|(value, id)| (value.into_owned(), id)))
+}
+
+/// Reads the IDs of the elements that overlap `start..end`, in order. Each element of text is one Unicode scalar or
+/// block marker. Text positions count in the document's text encoding, so a range that starts inside a scalar
+/// includes that scalar.
+fn element_ids(
+    doc: &am::AutoCommit,
+    obj: &am::ObjId,
+    start: u64,
+    end: u64,
+    heads: Option<&[am::ChangeHash]>,
+) -> Result<Vec<ElementId>, DocError> {
+    let text = is_text(doc, obj)?;
+    let length = match heads {
+        Some(heads) => doc.length_at(obj, heads),
+        None => doc.length(obj),
+    };
+    // Clamp before converting, so bounds past `usize` on 32-bit targets don't wrap.
+    let end = end.min(length as u64);
+    if start >= end {
+        return Ok(Vec::new());
+    }
+    let end = end as usize;
+    let mut index = start as usize;
+    if text && index > 0 {
+        // A cursor points at the element covering a position, so its position is that element's start.
+        let cursor = doc.get_cursor(obj, index, heads)?;
+        index = doc.get_cursor_position(obj, &cursor, heads)?;
+    }
+    let encoding = doc.text_encoding();
+    let mut ids = Vec::new();
+    while index < end {
+        let Some((value, id)) = get_element(doc, obj, index, heads)? else {
+            break;
+        };
+        ids.extend(ElementId::from_exid(obj, &id));
+        index += if text {
+            text_width(&value, encoding)
+        } else {
+            1
+        };
+    }
+    Ok(ids)
+}
+
+/// The number of units a text element takes in the text encoding. As in the core, a character counts by its own
+/// encoding, and a block marker as the object replacement character.
+fn text_width(value: &am::Value<'_>, encoding: am::TextEncoding) -> usize {
+    let string = match value {
+        am::Value::Scalar(scalar) => match scalar.as_ref() {
+            am::ScalarValue::Str(string) => string.as_str(),
+            _ => "\u{fffc}",
+        },
+        am::Value::Object(_) => "\u{fffc}",
+    };
+    match encoding {
+        am::TextEncoding::UnicodeCodePoint => string.chars().count(),
+        am::TextEncoding::Utf8CodeUnit => string.len(),
+        am::TextEncoding::Utf16CodeUnit => string.encode_utf16().count(),
+        // An element is one code point, which is one grapheme on its own.
+        am::TextEncoding::GraphemeCluster => 1,
+    }
+}
+
+/// Finds an element's position, or `None` if the object doesn't hold it: it belongs to another object, was
+/// deleted, or didn't exist yet at `heads`.
+fn element_position(
+    doc: &am::AutoCommit,
+    obj: &am::ObjId,
+    id: ElementId,
+    heads: Option<&[am::ChangeHash]>,
+) -> Result<Option<u64>, DocError> {
+    is_text(doc, obj)?;
+    let (element_obj, actor, counter) = id.into_parts();
+    // The core panics when it resolves a cursor against another object, so check the object first. `ObjId`
+    // equality compares actors, not their indexes, which can change as actors arrive.
+    if element_obj != *obj {
+        return Ok(None);
+    }
+    // A cursor is attached to an element's ID, written `counter@actor`.
+    let cursor = am::Cursor::try_from(format!("{counter}@{actor}").as_str())?;
+    // A deleted element's cursor resolves to the position after it, so check that the element there is this one.
+    let index = match doc.get_cursor_position(obj, &cursor, heads) {
+        Ok(index) => index,
+        Err(am::AutomergeError::InvalidCursor(_)) => return Ok(None),
+        Err(error) => return Err(error.into()),
+    };
+    Ok(match get_element(doc, obj, index, heads)? {
+        Some((_, am::ObjId::Id(found_counter, found_actor, _)))
+            if found_counter == counter && found_actor == actor =>
+        {
+            Some(index as u64)
+        }
+        _ => None,
+    })
 }

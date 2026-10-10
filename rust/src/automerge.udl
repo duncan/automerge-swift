@@ -104,6 +104,26 @@ dictionary Mark {
     ScalarValue value;
 };
 
+[Enum]
+interface HydratedValue {
+    Scalar( ScalarValue value );
+    Map( record<string, HydratedValue> value );
+    List( sequence<HydratedValue> value );
+    Text( string value );
+};
+
+[Enum]
+interface Span {
+    Text( string text, record<string, ScalarValue> marks );
+    Block( record<string, HydratedValue> value );
+};
+
+dictionary ElementId {
+    ObjId obj;
+    ActorId actor;
+    u64 counter;
+};
+
 dictionary PathElement {
     Prop prop;
     ObjId obj;
@@ -149,6 +169,8 @@ interface Doc {
     constructor(ActorId actor);
     [Name=load, Throws=LoadError]
     constructor(sequence<u8> bytes);
+    [Name=load_with_text_encoding, Throws=LoadError]
+    constructor(sequence<u8> bytes, TextEncoding text_encoding);
     [Name=new_with_text_encoding]
     constructor(TextEncoding text_encoding);
 
@@ -190,9 +212,21 @@ interface Doc {
     sequence<Mark> marks_at_position(ObjId obj, Position position, sequence<ChangeHash> heads);
 
     [Throws=DocError]
-    ObjId split_block(ObjId obj, u32 index);
+    ObjId split_block(ObjId obj, u64 index);
     [Throws=DocError]
-    void join_block(ObjId obj, u32 index);
+    ObjId split_block_with_value(ObjId obj, u64 index, record<string, HydratedValue> block);
+    [Throws=DocError]
+    void join_block(ObjId obj, u64 index);
+    [Throws=DocError]
+    ObjId update_block(ObjId obj, u64 index, record<string, HydratedValue> block);
+    [Throws=DocError]
+    record<string, HydratedValue>? get_block(ObjId obj, u64 index);
+    [Throws=DocError]
+    record<string, HydratedValue>? get_block_at(ObjId obj, u64 index, sequence<ChangeHash> heads);
+    [Throws=DocError]
+    sequence<Span> spans(ObjId obj);
+    [Throws=DocError]
+    sequence<Span> spans_at(ObjId obj, sequence<ChangeHash> heads);
 
     [Throws=DocError]
     void delete_in_map(ObjId obj, string key);
@@ -289,5 +323,14 @@ interface Doc {
     u64 cursor_position(ObjId obj, Cursor cursor);
     [Throws=DocError]
     u64 cursor_position_at(ObjId obj, Cursor cursor, sequence<ChangeHash> heads);
+
+    [Throws=DocError]
+    sequence<ElementId> element_ids(ObjId obj, u64 start, u64 end);
+    [Throws=DocError]
+    sequence<ElementId> element_ids_at(ObjId obj, u64 start, u64 end, sequence<ChangeHash> heads);
+    [Throws=DocError]
+    u64? element_position(ObjId obj, ElementId id);
+    [Throws=DocError]
+    u64? element_position_at(ObjId obj, ElementId id, sequence<ChangeHash> heads);
 
 };

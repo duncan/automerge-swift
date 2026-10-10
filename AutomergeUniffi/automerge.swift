@@ -415,22 +415,6 @@ fileprivate struct FfiConverterUInt8: FfiConverterPrimitive {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
-fileprivate struct FfiConverterUInt32: FfiConverterPrimitive {
-    typealias FfiType = UInt32
-    typealias SwiftType = UInt32
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt32 {
-        return try lift(readInt(&buf))
-    }
-
-    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-        writeInt(&buf, lower(value))
-    }
-}
-
-#if swift(>=5.8)
-@_documentation(visibility: private)
-#endif
 fileprivate struct FfiConverterUInt64: FfiConverterPrimitive {
     typealias FfiType = UInt64
     typealias SwiftType = UInt64
@@ -572,6 +556,14 @@ public protocol DocProtocol : AnyObject {
     
     func difference(before: [ChangeHash], after: [ChangeHash])  -> [Patch]
     
+    func elementIds(obj: ObjId, start: UInt64, end: UInt64) throws  -> [ElementId]
+    
+    func elementIdsAt(obj: ObjId, start: UInt64, end: UInt64, heads: [ChangeHash]) throws  -> [ElementId]
+    
+    func elementPosition(obj: ObjId, id: ElementId) throws  -> UInt64?
+    
+    func elementPositionAt(obj: ObjId, id: ElementId, heads: [ChangeHash]) throws  -> UInt64?
+    
     func encodeChangesSince(heads: [ChangeHash]) throws  -> [UInt8]
     
     func encodeNewChanges()  -> [UInt8]
@@ -594,6 +586,10 @@ public protocol DocProtocol : AnyObject {
     
     func getAtInMap(obj: ObjId, key: String, heads: [ChangeHash]) throws  -> Value?
     
+    func getBlock(obj: ObjId, index: UInt64) throws  -> [String: HydratedValue]?
+    
+    func getBlockAt(obj: ObjId, index: UInt64, heads: [ChangeHash]) throws  -> [String: HydratedValue]?
+    
     func getInList(obj: ObjId, index: UInt64) throws  -> Value?
     
     func getInMap(obj: ObjId, key: String) throws  -> Value?
@@ -608,7 +604,7 @@ public protocol DocProtocol : AnyObject {
     
     func insertObjectInList(obj: ObjId, index: UInt64, objType: ObjType) throws  -> ObjId
     
-    func joinBlock(obj: ObjId, index: UInt32) throws 
+    func joinBlock(obj: ObjId, index: UInt64) throws 
     
     func length(obj: ObjId)  -> UInt64
     
@@ -654,17 +650,25 @@ public protocol DocProtocol : AnyObject {
     
     func setActor(actor: ActorId) 
     
+    func spans(obj: ObjId) throws  -> [Span]
+    
+    func spansAt(obj: ObjId, heads: [ChangeHash]) throws  -> [Span]
+    
     func splice(obj: ObjId, start: UInt64, delete: Int64, values: [ScalarValue]) throws 
     
     func spliceText(obj: ObjId, start: UInt64, delete: Int64, chars: String) throws 
     
-    func splitBlock(obj: ObjId, index: UInt32) throws  -> ObjId
+    func splitBlock(obj: ObjId, index: UInt64) throws  -> ObjId
+    
+    func splitBlockWithValue(obj: ObjId, index: UInt64, block: [String: HydratedValue]) throws  -> ObjId
     
     func text(obj: ObjId) throws  -> String
     
     func textAt(obj: ObjId, heads: [ChangeHash]) throws  -> String
     
     func textEncoding()  -> TextEncoding
+    
+    func updateBlock(obj: ObjId, index: UInt64, block: [String: HydratedValue]) throws  -> ObjId
     
     func updateText(obj: ObjId, chars: String) throws 
     
@@ -733,6 +737,15 @@ public static func load(bytes: [UInt8])throws  -> Doc {
     return try  FfiConverterTypeDoc.lift(try rustCallWithError(FfiConverterTypeLoadError.lift) {
     uniffi_uniffi_automerge_fn_constructor_doc_load(
         FfiConverterSequenceUInt8.lower(bytes),$0
+    )
+})
+}
+    
+public static func loadWithTextEncoding(bytes: [UInt8], textEncoding: TextEncoding)throws  -> Doc {
+    return try  FfiConverterTypeDoc.lift(try rustCallWithError(FfiConverterTypeLoadError.lift) {
+    uniffi_uniffi_automerge_fn_constructor_doc_load_with_text_encoding(
+        FfiConverterSequenceUInt8.lower(bytes),
+        FfiConverterTypeTextEncoding.lower(textEncoding),$0
     )
 })
 }
@@ -863,6 +876,46 @@ open func difference(before: [ChangeHash], after: [ChangeHash]) -> [Patch] {
 })
 }
     
+open func elementIds(obj: ObjId, start: UInt64, end: UInt64)throws  -> [ElementId] {
+    return try  FfiConverterSequenceTypeElementId.lift(try rustCallWithError(FfiConverterTypeDocError.lift) {
+    uniffi_uniffi_automerge_fn_method_doc_element_ids(self.uniffiClonePointer(),
+        FfiConverterTypeObjId.lower(obj),
+        FfiConverterUInt64.lower(start),
+        FfiConverterUInt64.lower(end),$0
+    )
+})
+}
+    
+open func elementIdsAt(obj: ObjId, start: UInt64, end: UInt64, heads: [ChangeHash])throws  -> [ElementId] {
+    return try  FfiConverterSequenceTypeElementId.lift(try rustCallWithError(FfiConverterTypeDocError.lift) {
+    uniffi_uniffi_automerge_fn_method_doc_element_ids_at(self.uniffiClonePointer(),
+        FfiConverterTypeObjId.lower(obj),
+        FfiConverterUInt64.lower(start),
+        FfiConverterUInt64.lower(end),
+        FfiConverterSequenceTypeChangeHash.lower(heads),$0
+    )
+})
+}
+    
+open func elementPosition(obj: ObjId, id: ElementId)throws  -> UInt64? {
+    return try  FfiConverterOptionUInt64.lift(try rustCallWithError(FfiConverterTypeDocError.lift) {
+    uniffi_uniffi_automerge_fn_method_doc_element_position(self.uniffiClonePointer(),
+        FfiConverterTypeObjId.lower(obj),
+        FfiConverterTypeElementId.lower(id),$0
+    )
+})
+}
+    
+open func elementPositionAt(obj: ObjId, id: ElementId, heads: [ChangeHash])throws  -> UInt64? {
+    return try  FfiConverterOptionUInt64.lift(try rustCallWithError(FfiConverterTypeDocError.lift) {
+    uniffi_uniffi_automerge_fn_method_doc_element_position_at(self.uniffiClonePointer(),
+        FfiConverterTypeObjId.lower(obj),
+        FfiConverterTypeElementId.lower(id),
+        FfiConverterSequenceTypeChangeHash.lower(heads),$0
+    )
+})
+}
+    
 open func encodeChangesSince(heads: [ChangeHash])throws  -> [UInt8] {
     return try  FfiConverterSequenceUInt8.lift(try rustCallWithError(FfiConverterTypeDocError.lift) {
     uniffi_uniffi_automerge_fn_method_doc_encode_changes_since(self.uniffiClonePointer(),
@@ -959,6 +1012,25 @@ open func getAtInMap(obj: ObjId, key: String, heads: [ChangeHash])throws  -> Val
 })
 }
     
+open func getBlock(obj: ObjId, index: UInt64)throws  -> [String: HydratedValue]? {
+    return try  FfiConverterOptionDictionaryStringTypeHydratedValue.lift(try rustCallWithError(FfiConverterTypeDocError.lift) {
+    uniffi_uniffi_automerge_fn_method_doc_get_block(self.uniffiClonePointer(),
+        FfiConverterTypeObjId.lower(obj),
+        FfiConverterUInt64.lower(index),$0
+    )
+})
+}
+    
+open func getBlockAt(obj: ObjId, index: UInt64, heads: [ChangeHash])throws  -> [String: HydratedValue]? {
+    return try  FfiConverterOptionDictionaryStringTypeHydratedValue.lift(try rustCallWithError(FfiConverterTypeDocError.lift) {
+    uniffi_uniffi_automerge_fn_method_doc_get_block_at(self.uniffiClonePointer(),
+        FfiConverterTypeObjId.lower(obj),
+        FfiConverterUInt64.lower(index),
+        FfiConverterSequenceTypeChangeHash.lower(heads),$0
+    )
+})
+}
+    
 open func getInList(obj: ObjId, index: UInt64)throws  -> Value? {
     return try  FfiConverterOptionTypeValue.lift(try rustCallWithError(FfiConverterTypeDocError.lift) {
     uniffi_uniffi_automerge_fn_method_doc_get_in_list(self.uniffiClonePointer(),
@@ -1021,10 +1093,10 @@ open func insertObjectInList(obj: ObjId, index: UInt64, objType: ObjType)throws 
 })
 }
     
-open func joinBlock(obj: ObjId, index: UInt32)throws  {try rustCallWithError(FfiConverterTypeDocError.lift) {
+open func joinBlock(obj: ObjId, index: UInt64)throws  {try rustCallWithError(FfiConverterTypeDocError.lift) {
     uniffi_uniffi_automerge_fn_method_doc_join_block(self.uniffiClonePointer(),
         FfiConverterTypeObjId.lower(obj),
-        FfiConverterUInt32.lower(index),$0
+        FfiConverterUInt64.lower(index),$0
     )
 }
 }
@@ -1219,6 +1291,23 @@ open func setActor(actor: ActorId) {try! rustCall() {
 }
 }
     
+open func spans(obj: ObjId)throws  -> [Span] {
+    return try  FfiConverterSequenceTypeSpan.lift(try rustCallWithError(FfiConverterTypeDocError.lift) {
+    uniffi_uniffi_automerge_fn_method_doc_spans(self.uniffiClonePointer(),
+        FfiConverterTypeObjId.lower(obj),$0
+    )
+})
+}
+    
+open func spansAt(obj: ObjId, heads: [ChangeHash])throws  -> [Span] {
+    return try  FfiConverterSequenceTypeSpan.lift(try rustCallWithError(FfiConverterTypeDocError.lift) {
+    uniffi_uniffi_automerge_fn_method_doc_spans_at(self.uniffiClonePointer(),
+        FfiConverterTypeObjId.lower(obj),
+        FfiConverterSequenceTypeChangeHash.lower(heads),$0
+    )
+})
+}
+    
 open func splice(obj: ObjId, start: UInt64, delete: Int64, values: [ScalarValue])throws  {try rustCallWithError(FfiConverterTypeDocError.lift) {
     uniffi_uniffi_automerge_fn_method_doc_splice(self.uniffiClonePointer(),
         FfiConverterTypeObjId.lower(obj),
@@ -1239,11 +1328,21 @@ open func spliceText(obj: ObjId, start: UInt64, delete: Int64, chars: String)thr
 }
 }
     
-open func splitBlock(obj: ObjId, index: UInt32)throws  -> ObjId {
+open func splitBlock(obj: ObjId, index: UInt64)throws  -> ObjId {
     return try  FfiConverterTypeObjId.lift(try rustCallWithError(FfiConverterTypeDocError.lift) {
     uniffi_uniffi_automerge_fn_method_doc_split_block(self.uniffiClonePointer(),
         FfiConverterTypeObjId.lower(obj),
-        FfiConverterUInt32.lower(index),$0
+        FfiConverterUInt64.lower(index),$0
+    )
+})
+}
+    
+open func splitBlockWithValue(obj: ObjId, index: UInt64, block: [String: HydratedValue])throws  -> ObjId {
+    return try  FfiConverterTypeObjId.lift(try rustCallWithError(FfiConverterTypeDocError.lift) {
+    uniffi_uniffi_automerge_fn_method_doc_split_block_with_value(self.uniffiClonePointer(),
+        FfiConverterTypeObjId.lower(obj),
+        FfiConverterUInt64.lower(index),
+        FfiConverterDictionaryStringTypeHydratedValue.lower(block),$0
     )
 })
 }
@@ -1268,6 +1367,16 @@ open func textAt(obj: ObjId, heads: [ChangeHash])throws  -> String {
 open func textEncoding() -> TextEncoding {
     return try!  FfiConverterTypeTextEncoding.lift(try! rustCall() {
     uniffi_uniffi_automerge_fn_method_doc_text_encoding(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func updateBlock(obj: ObjId, index: UInt64, block: [String: HydratedValue])throws  -> ObjId {
+    return try  FfiConverterTypeObjId.lift(try rustCallWithError(FfiConverterTypeDocError.lift) {
+    uniffi_uniffi_automerge_fn_method_doc_update_block(self.uniffiClonePointer(),
+        FfiConverterTypeObjId.lower(obj),
+        FfiConverterUInt64.lower(index),
+        FfiConverterDictionaryStringTypeHydratedValue.lower(block),$0
     )
 })
 }
@@ -1599,6 +1708,80 @@ public func FfiConverterTypeChange_lift(_ buf: RustBuffer) throws -> Change {
 #endif
 public func FfiConverterTypeChange_lower(_ value: Change) -> RustBuffer {
     return FfiConverterTypeChange.lower(value)
+}
+
+
+public struct ElementId {
+    public var obj: ObjId
+    public var actor: ActorId
+    public var counter: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(obj: ObjId, actor: ActorId, counter: UInt64) {
+        self.obj = obj
+        self.actor = actor
+        self.counter = counter
+    }
+}
+
+
+
+extension ElementId: Equatable, Hashable {
+    public static func ==(lhs: ElementId, rhs: ElementId) -> Bool {
+        if lhs.obj != rhs.obj {
+            return false
+        }
+        if lhs.actor != rhs.actor {
+            return false
+        }
+        if lhs.counter != rhs.counter {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(obj)
+        hasher.combine(actor)
+        hasher.combine(counter)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeElementId: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ElementId {
+        return
+            try ElementId(
+                obj: FfiConverterTypeObjId.read(from: &buf), 
+                actor: FfiConverterTypeActorId.read(from: &buf), 
+                counter: FfiConverterUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: ElementId, into buf: inout [UInt8]) {
+        FfiConverterTypeObjId.write(value.obj, into: &buf)
+        FfiConverterTypeActorId.write(value.actor, into: &buf)
+        FfiConverterUInt64.write(value.counter, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeElementId_lift(_ buf: RustBuffer) throws -> ElementId {
+    return try FfiConverterTypeElementId.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeElementId_lower(_ value: ElementId) -> RustBuffer {
+    return FfiConverterTypeElementId.lower(value)
 }
 
 
@@ -2074,6 +2257,96 @@ public func FfiConverterTypeExpandMark_lower(_ value: ExpandMark) -> RustBuffer 
 
 
 extension ExpandMark: Equatable, Hashable {}
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
+public enum HydratedValue {
+    
+    case scalar(value: ScalarValue
+    )
+    case map(value: [String: HydratedValue]
+    )
+    case list(value: [HydratedValue]
+    )
+    case text(value: String
+    )
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeHydratedValue: FfiConverterRustBuffer {
+    typealias SwiftType = HydratedValue
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> HydratedValue {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .scalar(value: try FfiConverterTypeScalarValue.read(from: &buf)
+        )
+        
+        case 2: return .map(value: try FfiConverterDictionaryStringTypeHydratedValue.read(from: &buf)
+        )
+        
+        case 3: return .list(value: try FfiConverterSequenceTypeHydratedValue.read(from: &buf)
+        )
+        
+        case 4: return .text(value: try FfiConverterString.read(from: &buf)
+        )
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: HydratedValue, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case let .scalar(value):
+            writeInt(&buf, Int32(1))
+            FfiConverterTypeScalarValue.write(value, into: &buf)
+            
+        
+        case let .map(value):
+            writeInt(&buf, Int32(2))
+            FfiConverterDictionaryStringTypeHydratedValue.write(value, into: &buf)
+            
+        
+        case let .list(value):
+            writeInt(&buf, Int32(3))
+            FfiConverterSequenceTypeHydratedValue.write(value, into: &buf)
+            
+        
+        case let .text(value):
+            writeInt(&buf, Int32(4))
+            FfiConverterString.write(value, into: &buf)
+            
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHydratedValue_lift(_ buf: RustBuffer) throws -> HydratedValue {
+    return try FfiConverterTypeHydratedValue.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeHydratedValue_lower(_ value: HydratedValue) -> RustBuffer {
+    return FfiConverterTypeHydratedValue.lower(value)
+}
+
+
+
+extension HydratedValue: Equatable, Hashable {}
 
 
 
@@ -2701,6 +2974,77 @@ extension ScalarValue: Equatable, Hashable {}
 // Note that we don't yet support `indirect` for enums.
 // See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
 
+public enum Span {
+    
+    case text(text: String, marks: [String: ScalarValue]
+    )
+    case block(value: [String: HydratedValue]
+    )
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeSpan: FfiConverterRustBuffer {
+    typealias SwiftType = Span
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Span {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .text(text: try FfiConverterString.read(from: &buf), marks: try FfiConverterDictionaryStringTypeScalarValue.read(from: &buf)
+        )
+        
+        case 2: return .block(value: try FfiConverterDictionaryStringTypeHydratedValue.read(from: &buf)
+        )
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: Span, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case let .text(text,marks):
+            writeInt(&buf, Int32(1))
+            FfiConverterString.write(text, into: &buf)
+            FfiConverterDictionaryStringTypeScalarValue.write(marks, into: &buf)
+            
+        
+        case let .block(value):
+            writeInt(&buf, Int32(2))
+            FfiConverterDictionaryStringTypeHydratedValue.write(value, into: &buf)
+            
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSpan_lift(_ buf: RustBuffer) throws -> Span {
+    return try FfiConverterTypeSpan.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeSpan_lower(_ value: Span) -> RustBuffer {
+    return FfiConverterTypeSpan.lower(value)
+}
+
+
+
+extension Span: Equatable, Hashable {}
+
+
+
+// Note that we don't yet support `indirect` for enums.
+// See https://github.com/mozilla/uniffi-rs/issues/396 for further discussion.
+
 public enum TextEncoding {
     
     case unicodeCodePoint
@@ -2850,6 +3194,30 @@ extension Value: Equatable, Hashable {}
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionUInt64: FfiConverterRustBuffer {
+    typealias SwiftType = UInt64?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterUInt64.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterUInt64.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
     typealias SwiftType = String?
 
@@ -2970,6 +3338,30 @@ fileprivate struct FfiConverterOptionSequenceTypeChangeHash: FfiConverterRustBuf
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionDictionaryStringTypeHydratedValue: FfiConverterRustBuffer {
+    typealias SwiftType = [String: HydratedValue]?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterDictionaryStringTypeHydratedValue.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterDictionaryStringTypeHydratedValue.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceUInt8: FfiConverterRustBuffer {
     typealias SwiftType = [UInt8]
 
@@ -3012,6 +3404,31 @@ fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterString.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeElementId: FfiConverterRustBuffer {
+    typealias SwiftType = [ElementId]
+
+    public static func write(_ value: [ElementId], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeElementId.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ElementId] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [ElementId]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeElementId.read(from: &buf))
         }
         return seq
     }
@@ -3120,6 +3537,31 @@ fileprivate struct FfiConverterSequenceTypePathElement: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceTypeHydratedValue: FfiConverterRustBuffer {
+    typealias SwiftType = [HydratedValue]
+
+    public static func write(_ value: [HydratedValue], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeHydratedValue.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [HydratedValue] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [HydratedValue]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeHydratedValue.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeScalarValue: FfiConverterRustBuffer {
     typealias SwiftType = [ScalarValue]
 
@@ -3137,6 +3579,31 @@ fileprivate struct FfiConverterSequenceTypeScalarValue: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterTypeScalarValue.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeSpan: FfiConverterRustBuffer {
+    typealias SwiftType = [Span]
+
+    public static func write(_ value: [Span], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeSpan.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [Span] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [Span]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeSpan.read(from: &buf))
         }
         return seq
     }
@@ -3189,6 +3656,58 @@ fileprivate struct FfiConverterSequenceTypeChangeHash: FfiConverterRustBuffer {
             seq.append(try FfiConverterTypeChangeHash.read(from: &buf))
         }
         return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterDictionaryStringTypeHydratedValue: FfiConverterRustBuffer {
+    public static func write(_ value: [String: HydratedValue], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for (key, value) in value {
+            FfiConverterString.write(key, into: &buf)
+            FfiConverterTypeHydratedValue.write(value, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String: HydratedValue] {
+        let len: Int32 = try readInt(&buf)
+        var dict = [String: HydratedValue]()
+        dict.reserveCapacity(Int(len))
+        for _ in 0..<len {
+            let key = try FfiConverterString.read(from: &buf)
+            let value = try FfiConverterTypeHydratedValue.read(from: &buf)
+            dict[key] = value
+        }
+        return dict
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterDictionaryStringTypeScalarValue: FfiConverterRustBuffer {
+    public static func write(_ value: [String: ScalarValue], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for (key, value) in value {
+            FfiConverterString.write(key, into: &buf)
+            FfiConverterTypeScalarValue.write(value, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String: ScalarValue] {
+        let len: Int32 = try readInt(&buf)
+        var dict = [String: ScalarValue]()
+        dict.reserveCapacity(Int(len))
+        for _ in 0..<len {
+            let key = try FfiConverterString.read(from: &buf)
+            let value = try FfiConverterTypeScalarValue.read(from: &buf)
+            dict[key] = value
+        }
+        return dict
     }
 }
 
@@ -3457,6 +3976,18 @@ private var initializationResult: InitializationResult = {
     if (uniffi_uniffi_automerge_checksum_method_doc_difference() != 13614) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_uniffi_automerge_checksum_method_doc_element_ids() != 18214) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_element_ids_at() != 36445) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_element_position() != 769) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_element_position_at() != 32064) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_uniffi_automerge_checksum_method_doc_encode_changes_since() != 49806) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -3490,6 +4021,12 @@ private var initializationResult: InitializationResult = {
     if (uniffi_uniffi_automerge_checksum_method_doc_get_at_in_map() != 41003) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_uniffi_automerge_checksum_method_doc_get_block() != 57148) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_get_block_at() != 42289) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_uniffi_automerge_checksum_method_doc_get_in_list() != 55210) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -3511,7 +4048,7 @@ private var initializationResult: InitializationResult = {
     if (uniffi_uniffi_automerge_checksum_method_doc_insert_object_in_list() != 30538) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_uniffi_automerge_checksum_method_doc_join_block() != 37348) {
+    if (uniffi_uniffi_automerge_checksum_method_doc_join_block() != 8448) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_method_doc_length() != 30352) {
@@ -3580,13 +4117,22 @@ private var initializationResult: InitializationResult = {
     if (uniffi_uniffi_automerge_checksum_method_doc_set_actor() != 64337) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_uniffi_automerge_checksum_method_doc_spans() != 61413) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_spans_at() != 35222) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_uniffi_automerge_checksum_method_doc_splice() != 29894) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_method_doc_splice_text() != 20602) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_uniffi_automerge_checksum_method_doc_split_block() != 10956) {
+    if (uniffi_uniffi_automerge_checksum_method_doc_split_block() != 15883) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_split_block_with_value() != 30996) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_method_doc_text() != 64716) {
@@ -3596,6 +4142,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_method_doc_text_encoding() != 58521) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_update_block() != 7924) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_method_doc_update_text() != 26364) {
@@ -3617,6 +4166,9 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_constructor_doc_load() != 20048) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_constructor_doc_load_with_text_encoding() != 26143) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_constructor_doc_new() != 9447) {

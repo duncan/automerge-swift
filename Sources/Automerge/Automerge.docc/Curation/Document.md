@@ -6,6 +6,7 @@
 
 - ``init(textEncoding:logLevel:)``
 - ``init(_:logLevel:)``
+- ``init(_:textEncoding:logLevel:)``
 - ``LogVerbosity``
 
 ### Inspecting Documents
@@ -59,12 +60,28 @@
 - ``updateText(obj:value:)``
 - ``mark(obj:start:end:expand:name:value:)``
 
+### Reading and updating rich text blocks
+
+- ``spans(obj:)``
+- ``block(obj:index:)``
+- ``splitBlock(obj:index:)``
+- ``splitBlock(obj:index:block:)``
+- ``joinBlock(obj:index:)``
+- ``updateBlock(obj:index:block:)``
+
 ### Setting and Reading cursors
 
 - ``cursor(obj:position:)``
 - ``cursor(obj:position:heads:)``
 - ``position(obj:cursor:)``
 - ``position(obj:cursor:heads:)``
+
+### Identifying elements
+
+- ``elementIds(obj:range:)``
+- ``elementIds(obj:range:heads:)``
+- ``position(obj:elementId:)``
+- ``position(obj:elementId:heads:)``
 
 ### Updating counters
 
@@ -102,6 +119,8 @@
 - ``lengthAt(obj:heads:)``
 - ``marksAt(obj:heads:)``
 - ``marksAt(obj:position:heads:)``
+- ``spansAt(obj:heads:)``
+- ``blockAt(obj:index:heads:)``
 
 ### Saving, forking, and merging documents
 

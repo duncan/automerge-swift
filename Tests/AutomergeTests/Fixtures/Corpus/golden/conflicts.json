@@ -1,0 +1,94 @@
+{
+  "history" : [
+    {
+      "actor" : "d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+      "deps" : 0,
+      "message" : "base",
+      "time" : 1704067200
+    },
+    {
+      "actor" : "d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4d4",
+      "deps" : 1,
+      "message" : "D4 edits",
+      "time" : 1704067260
+    },
+    {
+      "actor" : "e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5",
+      "deps" : 1,
+      "message" : "E5 edits",
+      "time" : 1704067261
+    }
+  ],
+  "root" : {
+    "map" : {
+      "count" : {
+        "counter" : 7
+      },
+      "list" : {
+        "list" : [
+          {
+            "conflict" : {
+              "values" : [
+                {
+                  "str" : "first from D4"
+                },
+                {
+                  "str" : "first from E5"
+                }
+              ],
+              "winner" : {
+                "str" : "first from E5"
+              }
+            }
+          },
+          {
+            "str" : "from E5"
+          },
+          {
+            "str" : "from D4"
+          }
+        ]
+      },
+      "shape" : {
+        "conflict" : {
+          "values" : [
+            {
+              "map" : {
+
+              }
+            },
+            {
+              "str" : "circle"
+            }
+          ],
+          "winner" : {
+            "str" : "circle"
+          }
+        }
+      },
+      "text" : {
+        "text" : {
+          "marks" : [
+
+          ],
+          "value" : "aEDb"
+        }
+      },
+      "title" : {
+        "conflict" : {
+          "values" : [
+            {
+              "int" : 42
+            },
+            {
+              "str" : "from D4"
+            }
+          ],
+          "winner" : {
+            "int" : 42
+          }
+        }
+      }
+    }
+  }
+}

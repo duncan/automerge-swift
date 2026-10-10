@@ -12,10 +12,10 @@ struct UpstreamCorpusTests {
         ("crash-da39a3ee5e6b4b0d3255bfef95601890afd80709", "not enough data"),
         ("incorrect_max_op.automerge", "mismatching heads"),
         ("invalid_deflate_stream.automerge", "corrupt deflate stream"),
-        ("missing_actor.automerge", "missing actor or counter"),
+        ("missing_actor.automerge", "invalid load length"),
         ("overflow_in_length.automerge", "columns were not in normalized order"),
         ("too_many_deps.automerge", "failed to fill whole buffer"),
-        ("too_many_ops.automerge", "counter out of range"),
+        ("too_many_ops.automerge", "u32 overflow"),
     ]
 
     /// Well-formed documents that must be rejected, and the reason each is rejected.
@@ -26,9 +26,12 @@ struct UpstreamCorpusTests {
         // The counter's LEB128 encoding uses two bytes where one would do.
         ("counter_value_is_overlong.automerge", "leb128 was improperly encoded"),
         // Object IDs with 64-bit counters, as a change chunk and as a document chunk. The Rust test
-        // accepts either loading or rejecting these; automerge 0.7 rejects both.
+        // accepts either loading or rejecting these; automerge 0.12 rejects both.
         ("64bit_obj_id_change.automerge", "counter too large"),
-        ("64bit_obj_id_doc.automerge", "counter out of range"),
+        ("64bit_obj_id_doc.automerge", "delta value out of domain"),
+        // A zero-width mark whose end comes before its beginning, which older versions of automerge
+        // could write. automerge 0.7 loaded this document; 0.12 rejects it.
+        ("broken_zero_width_mark.automerge", "invalid mark operation order"),
     ]
 
     /// Documents containing a map at `a` with `a: "b"` inside it, stored as two change chunks.

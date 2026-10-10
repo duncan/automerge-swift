@@ -104,6 +104,12 @@ dictionary Mark {
     ScalarValue value;
 };
 
+dictionary ElementId {
+    ObjId obj;
+    ActorId actor;
+    u64 counter;
+};
+
 dictionary PathElement {
     Prop prop;
     ObjId obj;
@@ -289,5 +295,14 @@ interface Doc {
     u64 cursor_position(ObjId obj, Cursor cursor);
     [Throws=DocError]
     u64 cursor_position_at(ObjId obj, Cursor cursor, sequence<ChangeHash> heads);
+
+    [Throws=DocError]
+    sequence<ElementId> element_ids(ObjId obj, u64 start, u64 end);
+    [Throws=DocError]
+    sequence<ElementId> element_ids_at(ObjId obj, u64 start, u64 end, sequence<ChangeHash> heads);
+    [Throws=DocError]
+    u64? element_position(ObjId obj, ElementId id);
+    [Throws=DocError]
+    u64? element_position_at(ObjId obj, ElementId id, sequence<ChangeHash> heads);
 
 };

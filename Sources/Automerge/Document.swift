@@ -704,6 +704,113 @@ public final class Document: @unchecked Sendable {
         }
     }
 
+    /// Reads the identifiers of the elements in a range of the array or text object you provide.
+    ///
+    /// An element's identifier stays the same as others insert and delete around it. Use it to find the element again
+    /// with ``position(obj:elementId:)``, for example to remove exactly the text you inserted, even after a
+    /// collaborator typed inside it.
+    ///
+    /// In a text object, the range counts in the document's ``TextEncoding``. Each Unicode scalar is one element, as
+    /// is each block marker, so a Swift `Character` that holds several scalars, such as a letter and its combining
+    /// accent, is several elements. If the range starts or ends inside a scalar, such as between the two halves of a
+    /// surrogate pair in UTF-16, the result includes that scalar.
+    ///
+    /// - Parameters:
+    ///   - obj: The object identifier of the array or text object.
+    ///   - range: The range of indexes in the array, or of positions in the text object based on ``TextEncoding``.
+    ///     The part of the range past the end of the object is ignored.
+    /// - Returns: The identifiers of the elements that overlap the range, in order.
+    ///
+    /// ### See Also
+    /// ``elementIds(obj:range:heads:)``
+    /// ``position(obj:elementId:)``
+    ///
+    public func elementIds(obj: ObjId, range: Range<UInt64>) throws -> [ElementId] {
+        try lock {
+            try self.doc.wrapErrors {
+                try $0.elementIds(obj: obj.bytes, start: range.lowerBound, end: range.upperBound)
+                    .map(ElementId.init(ffi:))
+            }
+        }
+    }
+
+    /// Reads the identifiers of the elements in a range of the array or text object you provide, as they were at the
+    /// point in time you provide.
+    ///
+    /// In a text object, the range counts in the document's ``TextEncoding``. Each Unicode scalar is one element, as
+    /// is each block marker, so a Swift `Character` that holds several scalars, such as a letter and its combining
+    /// accent, is several elements. If the range starts or ends inside a scalar, such as between the two halves of a
+    /// surrogate pair in UTF-16, the result includes that scalar.
+    ///
+    /// - Parameters:
+    ///   - obj: The object identifier of the array or text object.
+    ///   - range: The range of indexes in the array, or of positions in the text object based on ``TextEncoding``.
+    ///     The part of the range past the end of the object is ignored.
+    ///   - heads: The set of ``ChangeHash`` that represents a point of time in the history the document.
+    /// - Returns: The identifiers of the elements that overlapped the range at that point in time, in order.
+    ///
+    /// ### See Also
+    /// ``elementIds(obj:range:)``
+    /// ``position(obj:elementId:heads:)``
+    ///
+    public func elementIds(obj: ObjId, range: Range<UInt64>, heads: Set<ChangeHash>) throws -> [ElementId] {
+        try lock {
+            try self.doc.wrapErrors {
+                try $0.elementIdsAt(
+                    obj: obj.bytes,
+                    start: range.lowerBound,
+                    end: range.upperBound,
+                    heads: heads.map(\.bytes)
+                )
+                .map(ElementId.init(ffi:))
+            }
+        }
+    }
+
+    /// Finds the current position of an element in the array or text object you provide.
+    ///
+    /// - Parameters:
+    ///   - obj: The object identifier of the array or text object that holds the element.
+    ///   - elementId: The identifier of the element, from ``elementIds(obj:range:)``.
+    /// - Returns: The element's index in the array, or its start position in the text object based on
+    ///   ``TextEncoding``, or `nil` if the object doesn't hold the element, because it was deleted or belongs to
+    ///   another object.
+    ///
+    /// ### See Also
+    /// ``position(obj:elementId:heads:)``
+    /// ``elementIds(obj:range:)``
+    ///
+    public func position(obj: ObjId, elementId: ElementId) throws -> UInt64? {
+        try lock {
+            try self.doc.wrapErrors {
+                try $0.elementPosition(obj: obj.bytes, id: elementId.toFfi())
+            }
+        }
+    }
+
+    /// Finds the position of an element in the array or text object you provide, as it was at the point in time you
+    /// provide.
+    ///
+    /// - Parameters:
+    ///   - obj: The object identifier of the array or text object that holds the element.
+    ///   - elementId: The identifier of the element, from ``elementIds(obj:range:)``.
+    ///   - heads: The set of ``ChangeHash`` that represents a point of time in the history the document.
+    /// - Returns: The element's index in the array, or its start position in the text object based on
+    ///   ``TextEncoding``, at that point in time, or `nil` if the object didn't hold the element then, because it
+    ///   was deleted, didn't exist yet, or belongs to another object.
+    ///
+    /// ### See Also
+    /// ``position(obj:elementId:)``
+    /// ``elementIds(obj:range:heads:)``
+    ///
+    public func position(obj: ObjId, elementId: ElementId, heads: Set<ChangeHash>) throws -> UInt64? {
+        try lock {
+            try self.doc.wrapErrors {
+                try $0.elementPositionAt(obj: obj.bytes, id: elementId.toFfi(), heads: heads.map(\.bytes))
+            }
+        }
+    }
+
     /// Splice an array of values into the array object you specify.
     ///
     /// - Parameters:

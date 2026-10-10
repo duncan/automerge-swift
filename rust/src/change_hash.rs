@@ -1,4 +1,3 @@
-use super::UniffiCustomTypeConverter;
 use automerge as am;
 
 pub struct ChangeHash(Vec<u8>);
@@ -22,17 +21,4 @@ impl<'a> From<&'a am::ChangeHash> for ChangeHash {
     }
 }
 
-impl UniffiCustomTypeConverter for ChangeHash {
-    type Builtin = Vec<u8>;
-
-    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self>
-    where
-        Self: Sized,
-    {
-        Ok(Self(val))
-    }
-
-    fn from_custom(obj: Self) -> Self::Builtin {
-        obj.0
-    }
-}
+uniffi::custom_newtype!(ChangeHash, Vec<u8>);

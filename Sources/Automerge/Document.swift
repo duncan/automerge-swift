@@ -140,11 +140,21 @@ public final class Document: @unchecked Sendable {
     /// Treat the rescued document as a new document: save it in place of the original, and share it with
     /// peers as a new document rather than syncing it with their copies of the original.
     ///
+    /// The text encoding isn't stored in the document's data, so rescue a document with the encoding it was
+    /// created with to keep its text positions in the same units.
+    ///
     /// - Parameters:
     ///   - data: The saved document that failed to load.
+    ///   - textEncoding: The encoding type for text within the rescued document.
     ///   - logLevel: The level at which to generate logs into unified logging from actions within this document.
-    public init(rescuing data: Data, logLevel: LogVerbosity = .errorOnly) throws {
-        doc = try WrappedDoc { try Doc.rescue(bytes: Array(data)) }
+    public init(
+        rescuing data: Data,
+        textEncoding: TextEncoding = .unicodeScalar,
+        logLevel: LogVerbosity = .errorOnly
+    ) throws {
+        doc = try WrappedDoc {
+            try Doc.rescue(bytes: Array(data), textEncoding: textEncoding.ffi_textEncoding)
+        }
         self.reportingLogLevel = logLevel
         commitWith(message: "Rescued from a document that failed to load")
     }

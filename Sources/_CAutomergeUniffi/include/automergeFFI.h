@@ -281,7 +281,7 @@ uint64_t uniffi_uniffi_automerge_fn_constructor_doc_new_with_text_encoding(RustB
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_CONSTRUCTOR_DOC_RESCUE
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_CONSTRUCTOR_DOC_RESCUE
-uint64_t uniffi_uniffi_automerge_fn_constructor_doc_rescue(RustBuffer bytes, RustCallStatus *_Nonnull out_status
+uint64_t uniffi_uniffi_automerge_fn_constructor_doc_rescue(RustBuffer bytes, RustBuffer text_encoding, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_ACTOR_ID

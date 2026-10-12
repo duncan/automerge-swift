@@ -109,6 +109,31 @@ class RescueTestCase: XCTestCase {
         XCTAssertEqual(try rescued.get(obj: rescuedMap, key: "key"), .Scalar(.F64(3.5)))
     }
 
+    func testARescuedDocumentUsesTheTextEncodingYouChoose() throws {
+        let rescued = try Document(rescuing: Self.brokenMark)
+        XCTAssertEqual(rescued.textEncoding, .unicodeScalar)
+
+        let original = Document(textEncoding: .utf16)
+        let text = try original.putObject(obj: .ROOT, key: "text", ty: .Text)
+        try original.spliceText(obj: text, start: 0, delete: 0, value: "🇩🇰 Æbler")
+        for encoding: TextEncoding in [.unicodeScalar, .utf8, .utf16, .graphemeCluster] {
+            let rescued = try Document(rescuing: original.save(), textEncoding: encoding)
+            XCTAssertEqual(rescued.textEncoding, encoding)
+            guard case let .Object(rescuedText, .Text) = try rescued.get(obj: .ROOT, key: "text") else {
+                return XCTFail("Expected a text object")
+            }
+            XCTAssertEqual(try rescued.text(obj: rescuedText), "🇩🇰 Æbler")
+            let flagWidth: UInt64 = switch encoding {
+            case .unicodeScalar: 2
+            case .utf8: 8
+            case .utf16: 4
+            case .graphemeCluster: 1
+            }
+            try rescued.spliceText(obj: rescuedText, start: flagWidth, delete: 0, value: "!")
+            XCTAssertEqual(try rescued.text(obj: rescuedText), "🇩🇰! Æbler", "\(encoding)")
+        }
+    }
+
     func testRescuingDataThatIsNotADocumentThrows() {
         for data in [
             Data([0x00]),

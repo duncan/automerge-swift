@@ -760,9 +760,9 @@ impl Doc {
     /// Recovers the current contents of a document that fails to load, as a new document whose
     /// contents are pending in its first transaction. The original history, marks and conflicting
     /// values are lost.
-    pub fn rescue(bytes: Vec<u8>) -> Result<Self, LoadError> {
+    pub fn rescue(bytes: Vec<u8>, text_encoding: TextEncoding) -> Result<Self, LoadError> {
         let value = am::Automerge::rescue(bytes.as_slice())?;
-        let mut ac = am::AutoCommit::new();
+        let mut ac = am::AutoCommit::new_with_encoding(text_encoding.into());
         // The root of a document is always a map.
         if let am::hydrate::Value::Map(root) = value {
             ac.init_root_from_hydrate(&root)?;

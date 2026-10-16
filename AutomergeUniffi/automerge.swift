@@ -556,6 +556,14 @@ public protocol DocProtocol : AnyObject {
     
     func difference(before: [ChangeHash], after: [ChangeHash])  -> [Patch]
     
+    func elementIds(obj: ObjId, start: UInt64, end: UInt64) throws  -> [ElementId]
+    
+    func elementIdsAt(obj: ObjId, start: UInt64, end: UInt64, heads: [ChangeHash]) throws  -> [ElementId]
+    
+    func elementPosition(obj: ObjId, id: ElementId) throws  -> UInt64?
+    
+    func elementPositionAt(obj: ObjId, id: ElementId, heads: [ChangeHash]) throws  -> UInt64?
+    
     func encodeChangesSince(heads: [ChangeHash]) throws  -> [UInt8]
     
     func encodeNewChanges()  -> [UInt8]
@@ -864,6 +872,46 @@ open func difference(before: [ChangeHash], after: [ChangeHash]) -> [Patch] {
     uniffi_uniffi_automerge_fn_method_doc_difference(self.uniffiClonePointer(),
         FfiConverterSequenceTypeChangeHash.lower(before),
         FfiConverterSequenceTypeChangeHash.lower(after),$0
+    )
+})
+}
+    
+open func elementIds(obj: ObjId, start: UInt64, end: UInt64)throws  -> [ElementId] {
+    return try  FfiConverterSequenceTypeElementId.lift(try rustCallWithError(FfiConverterTypeDocError.lift) {
+    uniffi_uniffi_automerge_fn_method_doc_element_ids(self.uniffiClonePointer(),
+        FfiConverterTypeObjId.lower(obj),
+        FfiConverterUInt64.lower(start),
+        FfiConverterUInt64.lower(end),$0
+    )
+})
+}
+    
+open func elementIdsAt(obj: ObjId, start: UInt64, end: UInt64, heads: [ChangeHash])throws  -> [ElementId] {
+    return try  FfiConverterSequenceTypeElementId.lift(try rustCallWithError(FfiConverterTypeDocError.lift) {
+    uniffi_uniffi_automerge_fn_method_doc_element_ids_at(self.uniffiClonePointer(),
+        FfiConverterTypeObjId.lower(obj),
+        FfiConverterUInt64.lower(start),
+        FfiConverterUInt64.lower(end),
+        FfiConverterSequenceTypeChangeHash.lower(heads),$0
+    )
+})
+}
+    
+open func elementPosition(obj: ObjId, id: ElementId)throws  -> UInt64? {
+    return try  FfiConverterOptionUInt64.lift(try rustCallWithError(FfiConverterTypeDocError.lift) {
+    uniffi_uniffi_automerge_fn_method_doc_element_position(self.uniffiClonePointer(),
+        FfiConverterTypeObjId.lower(obj),
+        FfiConverterTypeElementId.lower(id),$0
+    )
+})
+}
+    
+open func elementPositionAt(obj: ObjId, id: ElementId, heads: [ChangeHash])throws  -> UInt64? {
+    return try  FfiConverterOptionUInt64.lift(try rustCallWithError(FfiConverterTypeDocError.lift) {
+    uniffi_uniffi_automerge_fn_method_doc_element_position_at(self.uniffiClonePointer(),
+        FfiConverterTypeObjId.lower(obj),
+        FfiConverterTypeElementId.lower(id),
+        FfiConverterSequenceTypeChangeHash.lower(heads),$0
     )
 })
 }
@@ -1660,6 +1708,80 @@ public func FfiConverterTypeChange_lift(_ buf: RustBuffer) throws -> Change {
 #endif
 public func FfiConverterTypeChange_lower(_ value: Change) -> RustBuffer {
     return FfiConverterTypeChange.lower(value)
+}
+
+
+public struct ElementId {
+    public var obj: ObjId
+    public var actor: ActorId
+    public var counter: UInt64
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(obj: ObjId, actor: ActorId, counter: UInt64) {
+        self.obj = obj
+        self.actor = actor
+        self.counter = counter
+    }
+}
+
+
+
+extension ElementId: Equatable, Hashable {
+    public static func ==(lhs: ElementId, rhs: ElementId) -> Bool {
+        if lhs.obj != rhs.obj {
+            return false
+        }
+        if lhs.actor != rhs.actor {
+            return false
+        }
+        if lhs.counter != rhs.counter {
+            return false
+        }
+        return true
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(obj)
+        hasher.combine(actor)
+        hasher.combine(counter)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeElementId: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ElementId {
+        return
+            try ElementId(
+                obj: FfiConverterTypeObjId.read(from: &buf), 
+                actor: FfiConverterTypeActorId.read(from: &buf), 
+                counter: FfiConverterUInt64.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: ElementId, into buf: inout [UInt8]) {
+        FfiConverterTypeObjId.write(value.obj, into: &buf)
+        FfiConverterTypeActorId.write(value.actor, into: &buf)
+        FfiConverterUInt64.write(value.counter, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeElementId_lift(_ buf: RustBuffer) throws -> ElementId {
+    return try FfiConverterTypeElementId.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeElementId_lower(_ value: ElementId) -> RustBuffer {
+    return FfiConverterTypeElementId.lower(value)
 }
 
 
@@ -3072,6 +3194,30 @@ extension Value: Equatable, Hashable {}
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionUInt64: FfiConverterRustBuffer {
+    typealias SwiftType = UInt64?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterUInt64.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterUInt64.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionString: FfiConverterRustBuffer {
     typealias SwiftType = String?
 
@@ -3258,6 +3404,31 @@ fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterString.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeElementId: FfiConverterRustBuffer {
+    typealias SwiftType = [ElementId]
+
+    public static func write(_ value: [ElementId], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeElementId.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ElementId] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [ElementId]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeElementId.read(from: &buf))
         }
         return seq
     }
@@ -3803,6 +3974,18 @@ private var initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_method_doc_difference() != 13614) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_element_ids() != 18214) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_element_ids_at() != 36445) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_element_position() != 769) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_element_position_at() != 32064) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_method_doc_encode_changes_since() != 49806) {

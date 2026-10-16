@@ -122,6 +122,43 @@ public final class Document: @unchecked Sendable {
         self.reportingLogLevel = logLevel
     }
 
+    /// Recovers the current contents of a document that ``init(_:logLevel:)`` can't load.
+    ///
+    /// Use this only after loading a document fails. It recovers what it can from data that
+    /// automerge rejects when loading, such as a document containing a mark that older versions of
+    /// automerge wrote incorrectly, and throws if the data can't be read at all.
+    ///
+    /// The result is a new document, not the original one repaired. It has a new actor and a single
+    /// change holding the recovered contents, so:
+    ///
+    /// - The original history is lost, including the ability to read the document at earlier heads.
+    /// - Text keeps its characters but loses its marks.
+    /// - Where a key or list element had conflicting values, only the winning value is kept.
+    /// - It can't sync or merge with other copies of the original document, because its changes share
+    ///   no history with theirs. Merging them duplicates content rather than combining it.
+    ///
+    /// Treat the rescued document as a new document: save it in place of the original, and share it with
+    /// peers as a new document rather than syncing it with their copies of the original.
+    ///
+    /// The text encoding isn't stored in the document's data, so rescue a document with the encoding it was
+    /// created with to keep its text positions in the same units.
+    ///
+    /// - Parameters:
+    ///   - data: The saved document that failed to load.
+    ///   - textEncoding: The encoding type for text within the rescued document.
+    ///   - logLevel: The level at which to generate logs into unified logging from actions within this document.
+    public init(
+        rescuing data: Data,
+        textEncoding: TextEncoding = .unicodeScalar,
+        logLevel: LogVerbosity = .errorOnly
+    ) throws {
+        doc = try WrappedDoc {
+            try Doc.rescue(bytes: Array(data), textEncoding: textEncoding.ffi_textEncoding)
+        }
+        self.reportingLogLevel = logLevel
+        commitWith(message: "Rescued from a document that failed to load")
+    }
+
     private init(doc: Doc, logLevel: LogVerbosity = .errorOnly) {
         self.doc = WrappedDoc(doc)
         self.reportingLogLevel = logLevel

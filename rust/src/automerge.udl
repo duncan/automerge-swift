@@ -171,6 +171,8 @@ interface Doc {
     constructor(sequence<u8> bytes);
     [Name=load_with_text_encoding, Throws=LoadError]
     constructor(sequence<u8> bytes, TextEncoding text_encoding);
+    [Name=rescue, Throws=LoadError]
+    constructor(sequence<u8> bytes, TextEncoding text_encoding);
     [Name=new_with_text_encoding]
     constructor(TextEncoding text_encoding);
 

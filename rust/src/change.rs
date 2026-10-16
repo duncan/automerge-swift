@@ -26,6 +26,7 @@ impl From<am::Change> for Change {
 
 impl From<Change> for am::Change {
     fn from(value: Change) -> Self {
+        // Can't fail: a Change's bytes always come from an automerge change this library converted.
         am::Change::try_from(value.bytes.as_slice()).unwrap()
     }
 }

@@ -6,4 +6,5 @@ THIS_SCRIPT_DIR="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 
 $THIS_SCRIPT_DIR/rustfmt.sh
 $THIS_SCRIPT_DIR/clippy.sh
+$THIS_SCRIPT_DIR/rust-test.sh
 $THIS_SCRIPT_DIR/test.sh

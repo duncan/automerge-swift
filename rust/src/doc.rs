@@ -78,20 +78,20 @@ impl Doc {
     }
 
     pub fn text_encoding(&self) -> TextEncoding {
-        self.0.read().unwrap().text_encoding().into()
+        crate::lock::read(&self.0).text_encoding().into()
     }
 
     pub fn actor_id(&self) -> ActorId {
-        self.0.read().unwrap().get_actor().into()
+        crate::lock::read(&self.0).get_actor().into()
     }
 
     pub fn set_actor(&self, actor: ActorId) {
-        self.0.write().unwrap().set_actor(actor.into());
+        crate::lock::write(&self.0).set_actor(actor.into());
     }
 
     pub fn put_in_map(&self, obj: ObjId, key: String, value: ScalarValue) -> Result<(), DocError> {
         let obj = am::ObjId::from(obj);
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         assert_map(&*doc, &obj)?;
         doc.put(obj, key, value).map_err(|e| e.into())
     }
@@ -103,7 +103,7 @@ impl Doc {
         value: ObjType,
     ) -> Result<ObjId, DocError> {
         let obj = am::ObjId::from(obj);
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         assert_map(&*doc, &obj)?;
         let obj = doc.put_object(obj, key, value.into())?;
         Ok(obj.into())
@@ -111,7 +111,7 @@ impl Doc {
 
     pub fn put_in_list(&self, obj: ObjId, index: u64, value: ScalarValue) -> Result<(), DocError> {
         let obj = am::ObjId::from(obj);
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         assert_list(&*doc, &obj)?;
         doc.put(obj, to_index(index), value).map_err(|e| e.into())
     }
@@ -123,7 +123,7 @@ impl Doc {
         value: ObjType,
     ) -> Result<ObjId, DocError> {
         let obj = am::ObjId::from(obj);
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         assert_list(&*doc, &obj)?;
         let obj = doc.put_object(obj, to_index(index), value.into())?;
         Ok(obj.into())
@@ -136,7 +136,7 @@ impl Doc {
         value: ScalarValue,
     ) -> Result<(), DocError> {
         let obj = am::ObjId::from(obj);
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         assert_list(&*doc, &obj)?;
         doc.insert(obj, to_index(index), value)
             .map_err(|e| e.into())
@@ -149,7 +149,7 @@ impl Doc {
         value: ObjType,
     ) -> Result<ObjId, DocError> {
         let obj = am::ObjId::from(obj);
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         assert_list(&*doc, &obj)?;
         let obj = doc.insert_object(obj, to_index(index), value.into())?;
         Ok(obj.into())
@@ -157,42 +157,42 @@ impl Doc {
 
     pub fn delete_in_map(&self, obj: ObjId, key: String) -> Result<(), DocError> {
         let obj = am::ObjId::from(obj);
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         assert_map(&*doc, &obj)?;
         Ok(doc.delete(&obj, key)?)
     }
 
     pub fn delete_in_list(&self, obj: ObjId, index: u64) -> Result<(), DocError> {
         let obj = am::ObjId::from(obj);
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         assert_list(&*doc, &obj)?;
         Ok(doc.delete(&obj, to_index(index))?)
     }
 
     pub fn increment_in_map(&self, obj: ObjId, key: String, by: i64) -> Result<(), DocError> {
         let obj = am::ObjId::from(obj);
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         assert_map(&*doc, &obj)?;
         Ok(doc.increment(&obj, key, by)?)
     }
 
     pub fn increment_in_list(&self, obj: ObjId, index: u64, by: i64) -> Result<(), DocError> {
         let obj = am::ObjId::from(obj);
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         assert_list(&*doc, &obj)?;
         Ok(doc.increment(&obj, to_index(index), by)?)
     }
 
     pub fn get_in_map(&self, obj: ObjId, key: String) -> Result<Option<Value>, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         assert_map(&*doc, &obj)?;
         Ok(doc.get(obj, key)?.map(|v| v.into()))
     }
 
     pub fn get_in_list(&self, obj: ObjId, idx: u64) -> Result<Option<Value>, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         assert_sequence(&*doc, &obj)?;
         Ok(doc.get(obj, to_index(idx))?.map(|v| v.into()))
     }
@@ -204,7 +204,7 @@ impl Doc {
         heads: Vec<ChangeHash>,
     ) -> Result<Option<Value>, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let heads = heads.into_iter().map(|h| h.into()).collect::<Vec<_>>();
         assert_map(&*doc, &obj)?;
         Ok(doc.get_at(obj, key, &heads)?.map(|v| v.into()))
@@ -217,7 +217,7 @@ impl Doc {
         heads: Vec<ChangeHash>,
     ) -> Result<Option<Value>, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let heads = heads.into_iter().map(|h| h.into()).collect::<Vec<_>>();
         assert_sequence(&*doc, &obj)?;
         Ok(doc.get_at(obj, to_index(idx), &heads)?.map(|v| v.into()))
@@ -225,7 +225,7 @@ impl Doc {
 
     pub fn get_all_in_map(&self, obj: ObjId, key: String) -> Result<Vec<Value>, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         assert_map(&*doc, &obj)?;
         let vals = doc.get_all(&obj, key)?;
         Ok(vals
@@ -236,7 +236,7 @@ impl Doc {
 
     pub fn get_all_in_list(&self, obj: ObjId, index: u64) -> Result<Vec<Value>, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         assert_sequence(&*doc, &obj)?;
         let vals = doc.get_all(&obj, to_index(index))?;
         Ok(vals
@@ -252,7 +252,7 @@ impl Doc {
         heads: Vec<ChangeHash>,
     ) -> Result<Vec<Value>, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let heads = heads
             .into_iter()
             .map(am::ChangeHash::from)
@@ -269,7 +269,7 @@ impl Doc {
         heads: Vec<ChangeHash>,
     ) -> Result<Vec<Value>, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let heads = heads
             .into_iter()
             .map(am::ChangeHash::from)
@@ -280,17 +280,19 @@ impl Doc {
     }
 
     pub fn map_keys(&self, obj: ObjId) -> Vec<String> {
-        self.0.read().unwrap().keys(am::ObjId::from(obj)).collect()
+        crate::lock::read(&self.0)
+            .keys(am::ObjId::from(obj))
+            .collect()
     }
 
     pub fn map_keys_at(&self, obj: ObjId, heads: Vec<ChangeHash>) -> Vec<String> {
         let obj = am::ObjId::from(obj);
         let heads = heads.into_iter().map(|h| h.into()).collect::<Vec<_>>();
-        self.0.read().unwrap().keys_at(&obj, &heads).collect()
+        crate::lock::read(&self.0).keys_at(&obj, &heads).collect()
     }
 
     pub fn map_entries(&self, obj: ObjId) -> Result<Vec<KeyValue>, DocError> {
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let obj = am::ObjId::from(obj);
         assert_map(&*doc, &obj)?;
         Ok(doc
@@ -310,7 +312,7 @@ impl Doc {
         obj: ObjId,
         heads: Vec<ChangeHash>,
     ) -> Result<Vec<KeyValue>, DocError> {
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let obj = am::ObjId::from(obj);
         let heads = heads.into_iter().map(|h| h.into()).collect::<Vec<_>>();
         assert_map(&*doc, &obj)?;
@@ -327,13 +329,13 @@ impl Doc {
     }
 
     pub fn values(&self, obj: ObjId) -> Result<Vec<Value>, DocError> {
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let obj = am::ObjId::from(obj);
         Ok(doc.values(&obj).map(Value::from).collect::<Vec<_>>())
     }
 
     pub fn values_at(&self, obj: ObjId, heads: Vec<ChangeHash>) -> Result<Vec<Value>, DocError> {
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let obj = am::ObjId::from(obj);
         let heads = heads
             .into_iter()
@@ -346,13 +348,13 @@ impl Doc {
     }
 
     pub fn length(&self, obj: ObjId) -> u64 {
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let obj = am::ObjId::from(obj);
         doc.length(obj) as u64
     }
 
     pub fn length_at(&self, obj: ObjId, heads: Vec<ChangeHash>) -> u64 {
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let obj = am::ObjId::from(obj);
         let heads = heads
             .into_iter()
@@ -363,13 +365,15 @@ impl Doc {
 
     pub fn object_type(&self, obj: ObjId) -> ObjType {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
+        // Panics if `obj` isn't an object in this document. This can't return an error without
+        // changing objectType(obj:) in Swift to throw; see automerge/automerge-swift#237.
         doc.object_type(obj).unwrap().into()
     }
 
     pub fn cursor(&self, obj: ObjId, position: u64) -> Result<Cursor, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let index = to_index(position);
         let position = if index >= doc.length(&obj) {
             CursorPosition::End
@@ -388,7 +392,7 @@ impl Doc {
         heads: Vec<ChangeHash>,
     ) -> Result<Cursor, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let heads = heads
             .into_iter()
             .map(am::ChangeHash::from)
@@ -408,7 +412,7 @@ impl Doc {
 
     pub fn cursor_position(&self, obj: ObjId, cursor: Cursor) -> Result<u64, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         doc.get_cursor_position(obj, &cursor.into(), None)
             .map(|cursor| cursor as u64)
             .map_err(|error| DocError::Internal(error))
@@ -421,7 +425,7 @@ impl Doc {
         heads: Vec<ChangeHash>,
     ) -> Result<u64, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let heads = heads
             .into_iter()
             .map(am::ChangeHash::from)
@@ -438,7 +442,7 @@ impl Doc {
         end: u64,
     ) -> Result<Vec<ElementId>, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         element_ids(&doc, &obj, start, end, None)
     }
 
@@ -450,7 +454,7 @@ impl Doc {
         heads: Vec<ChangeHash>,
     ) -> Result<Vec<ElementId>, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let heads = heads
             .into_iter()
             .map(am::ChangeHash::from)
@@ -460,7 +464,7 @@ impl Doc {
 
     pub fn element_position(&self, obj: ObjId, id: ElementId) -> Result<Option<u64>, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         element_position(&doc, &obj, id, None)
     }
 
@@ -471,7 +475,7 @@ impl Doc {
         heads: Vec<ChangeHash>,
     ) -> Result<Option<u64>, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let heads = heads
             .into_iter()
             .map(am::ChangeHash::from)
@@ -481,14 +485,14 @@ impl Doc {
 
     pub fn text(&self, obj: ObjId) -> Result<String, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         assert_text(&*doc, &obj)?;
         Ok(doc.text(obj)?)
     }
 
     pub fn text_at(&self, obj: ObjId, heads: Vec<ChangeHash>) -> Result<String, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         assert_text(&*doc, &obj)?;
         let heads = heads
             .into_iter()
@@ -505,7 +509,7 @@ impl Doc {
         value: String,
     ) -> Result<(), DocError> {
         let obj = am::ObjId::from(obj);
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         assert_text(&*doc, &obj)?;
         doc.splice_text(
             &obj,
@@ -518,7 +522,7 @@ impl Doc {
 
     pub fn update_text(&self, obj: ObjId, value: String) -> Result<(), DocError> {
         let obj = am::ObjId::from(obj);
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         assert_text(&*doc, &obj)?;
         doc.update_text(&obj, value)?;
         Ok(())
@@ -532,7 +536,7 @@ impl Doc {
         values: Vec<ScalarValue>,
     ) -> Result<(), DocError> {
         let obj = am::ObjId::from(obj);
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         assert_list(&*doc, &obj)?;
         doc.splice(
             &obj,
@@ -553,7 +557,7 @@ impl Doc {
         value: ScalarValue,
     ) -> Result<(), DocError> {
         let obj = am::ObjId::from(obj);
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         assert_text(&*doc, &obj)?;
         // Check the range before calling automerge: its mark applies the start of a mark whose end
         // is out of bounds before returning the error, and very large indices overflow inside it.
@@ -568,7 +572,7 @@ impl Doc {
 
     pub fn marks(&self, obj: ObjId) -> Result<Vec<Mark>, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.write().unwrap();
+        let doc = crate::lock::write(&self.0);
         assert_text(&*doc, &obj)?;
         Ok(doc
             .marks(obj)?
@@ -579,7 +583,7 @@ impl Doc {
 
     pub fn marks_at(&self, obj: ObjId, heads: Vec<ChangeHash>) -> Result<Vec<Mark>, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.write().unwrap();
+        let doc = crate::lock::write(&self.0);
         assert_text(&*doc, &obj)?;
         let heads = heads
             .into_iter()
@@ -599,7 +603,7 @@ impl Doc {
         heads: Vec<ChangeHash>,
     ) -> Result<Vec<Mark>, DocError> {
         let obj = am::ObjId::from(obj);
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         assert_text(&*doc, &obj)?;
         let heads = heads
             .into_iter()
@@ -616,7 +620,7 @@ impl Doc {
     }
 
     pub fn split_block(&self, obj: ObjId, index: u64) -> Result<ObjId, DocError> {
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         let obj = am::ObjId::from(obj);
         assert_text(&*doc, &obj)?;
         let id = doc.split_block(obj, index as usize)?;
@@ -629,7 +633,7 @@ impl Doc {
         index: u64,
         block: HashMap<String, HydratedValue>,
     ) -> Result<ObjId, DocError> {
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         let obj = am::ObjId::from(obj);
         assert_text(&*doc, &obj)?;
         let block = map_into_hydrate(block, doc.text_encoding());
@@ -639,7 +643,7 @@ impl Doc {
     }
 
     pub fn join_block(&self, obj: ObjId, index: u64) -> Result<(), DocError> {
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         let obj = am::ObjId::from(obj);
         assert_text(&*doc, &obj)?;
         assert_block(&*doc, &obj, index)?;
@@ -653,7 +657,7 @@ impl Doc {
         index: u64,
         block: HashMap<String, HydratedValue>,
     ) -> Result<ObjId, DocError> {
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         let obj = am::ObjId::from(obj);
         assert_text(&*doc, &obj)?;
         assert_block(&*doc, &obj, index)?;
@@ -668,7 +672,7 @@ impl Doc {
         obj: ObjId,
         index: u64,
     ) -> Result<Option<HashMap<String, HydratedValue>>, DocError> {
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let obj = am::ObjId::from(obj);
         assert_text(&*doc, &obj)?;
         block_value(&*doc, &obj, index, None)
@@ -680,7 +684,7 @@ impl Doc {
         index: u64,
         heads: Vec<ChangeHash>,
     ) -> Result<Option<HashMap<String, HydratedValue>>, DocError> {
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let obj = am::ObjId::from(obj);
         assert_text(&*doc, &obj)?;
         let heads = heads
@@ -691,14 +695,14 @@ impl Doc {
     }
 
     pub fn spans(&self, obj: ObjId) -> Result<Vec<Span>, DocError> {
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let obj = am::ObjId::from(obj);
         assert_text(&*doc, &obj)?;
         Ok(doc.spans(obj)?.map(Span::from).collect())
     }
 
     pub fn spans_at(&self, obj: ObjId, heads: Vec<ChangeHash>) -> Result<Vec<Span>, DocError> {
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let obj = am::ObjId::from(obj);
         assert_text(&*doc, &obj)?;
         let heads = heads
@@ -709,15 +713,15 @@ impl Doc {
     }
 
     pub fn merge(&self, other: Arc<Self>) -> Result<(), DocError> {
-        let mut doc = self.0.write().unwrap();
-        let mut other = other.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
+        let mut other = crate::lock::write(&other.0);
         doc.merge(&mut other)?;
         Ok(())
     }
 
     pub fn merge_with_patches(&self, other: Arc<Self>) -> Result<Vec<Patch>, DocError> {
-        let doc = self.0.write().unwrap();
-        let mut other = other.0.write().unwrap();
+        let doc = crate::lock::write(&self.0);
+        let mut other = crate::lock::write(&other.0);
         Self::do_with_patches(doc, move |doc| {
             doc.merge(&mut other)?;
             Ok(())
@@ -725,7 +729,7 @@ impl Doc {
     }
 
     pub fn commit_with(&self, message: Option<String>, time: i64) {
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         let mut options = automerge::transaction::CommitOptions::default();
         options.set_time(time);
         if let Some(message) = message {
@@ -735,7 +739,7 @@ impl Doc {
     }
 
     pub fn save(&self) -> Vec<u8> {
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         doc.save()
     }
 
@@ -754,8 +758,8 @@ impl Doc {
     }
 
     pub fn generate_sync_message(&self, sync_state: Arc<SyncState>) -> Option<Vec<u8>> {
-        let mut doc = self.0.write().unwrap();
-        let mut state = sync_state.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
+        let mut state = crate::lock::write(&sync_state.0);
         let sync = doc.sync();
         sync.generate_sync_message(&mut state)
             .map(|msg| msg.encode())
@@ -768,8 +772,8 @@ impl Doc {
     ) -> Result<(), ReceiveSyncError> {
         let message =
             am::sync::Message::decode(&message).map_err(|_| ReceiveSyncError::InvalidMessage)?;
-        let mut doc = self.0.write().unwrap();
-        let mut state = sync_state.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
+        let mut state = crate::lock::write(&sync_state.0);
         doc.sync().receive_sync_message(&mut state, message)?;
         Ok(())
     }
@@ -781,8 +785,8 @@ impl Doc {
     ) -> Result<Vec<Patch>, ReceiveSyncError> {
         let message =
             am::sync::Message::decode(&message).map_err(|_| ReceiveSyncError::InvalidMessage)?;
-        let doc = self.0.write().unwrap();
-        let mut state = sync_state.0.write().unwrap();
+        let doc = crate::lock::write(&self.0);
+        let mut state = crate::lock::write(&sync_state.0);
         Self::do_with_patches(doc, move |doc| {
             doc.sync().receive_sync_message(&mut state, message)?;
             Ok(())
@@ -790,12 +794,12 @@ impl Doc {
     }
 
     pub fn fork(&self) -> Arc<Self> {
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         Arc::new(Self(RwLock::new(doc.fork())))
     }
 
     pub fn fork_at(&self, heads: Vec<ChangeHash>) -> Result<Arc<Self>, DocError> {
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         let heads = heads
             .into_iter()
             .map(am::ChangeHash::from)
@@ -812,9 +816,7 @@ impl Doc {
     }
 
     pub fn heads(&self) -> Vec<ChangeHash> {
-        self.0
-            .write()
-            .unwrap()
+        crate::lock::write(&self.0)
             .get_heads()
             .into_iter()
             .map(|h| h.into())
@@ -823,7 +825,7 @@ impl Doc {
 
     pub fn changes(&self) -> Vec<ChangeHash> {
         let empty_heads: Vec<am::ChangeHash> = Vec::new();
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         let changes = doc.get_changes(&empty_heads);
         changes.into_iter().map(|h| h.hash().into()).collect()
     }
@@ -837,19 +839,19 @@ impl Doc {
             .into_iter()
             .map(am::ChangeHash::from)
             .collect::<Vec<_>>();
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         let patches = doc.diff(&lhs, &rhs);
         patches.into_iter().map(Patch::from).collect()
     }
 
     pub fn change_by_hash(&self, hash: ChangeHash) -> Option<Change> {
-        let doc = self.0.write().unwrap();
+        let doc = crate::lock::write(&self.0);
         doc.get_change_by_hash(&am::ChangeHash::from(hash))
             .map(|m| Change::from(m.clone()))
     }
 
     pub fn path(&self, obj: ObjId) -> Result<Vec<PathElement>, DocError> {
-        let doc = self.0.read().unwrap();
+        let doc = crate::lock::read(&self.0);
         let obj = am::ObjId::from(obj);
         let path = doc.parents(obj)?.path();
         Ok(path
@@ -859,12 +861,12 @@ impl Doc {
     }
 
     pub fn encode_new_changes(&self) -> Vec<u8> {
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         doc.save_incremental()
     }
 
     pub fn encode_changes_since(&self, heads: Vec<ChangeHash>) -> Result<Vec<u8>, DocError> {
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         let heads = heads
             .into_iter()
             .map(am::ChangeHash::from)
@@ -878,7 +880,7 @@ impl Doc {
     }
 
     pub fn apply_encoded_changes(&self, changes: Vec<u8>) -> Result<(), DocError> {
-        let mut doc = self.0.write().unwrap();
+        let mut doc = crate::lock::write(&self.0);
         doc.reset_diff_cursor();
         doc.load_incremental(&changes)?;
         Ok(())
@@ -888,7 +890,7 @@ impl Doc {
         &self,
         changes: Vec<u8>,
     ) -> Result<Vec<Patch>, DocError> {
-        let doc = self.0.write().unwrap();
+        let doc = crate::lock::write(&self.0);
         Self::do_with_patches(doc, move |doc| {
             doc.load_incremental(changes.as_slice())?;
             Ok(())

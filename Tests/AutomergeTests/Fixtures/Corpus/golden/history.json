@@ -1,0 +1,35 @@
+{
+  "history" : [
+    {
+      "actor" : "f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6",
+      "deps" : 0,
+      "message" : "create",
+      "time" : 1704067200
+    },
+    {
+      "actor" : "f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6",
+      "deps" : 1,
+      "message" : null,
+      "time" : 1704070800
+    },
+    {
+      "actor" : "f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6",
+      "deps" : 1,
+      "message" : "",
+      "time" : 1704074400
+    },
+    {
+      "actor" : "f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6",
+      "deps" : 1,
+      "message" : "remove temporary 🗑️",
+      "time" : 1704153600
+    }
+  ],
+  "root" : {
+    "map" : {
+      "status" : {
+        "str" : "published"
+      }
+    }
+  }
+}

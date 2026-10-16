@@ -1,0 +1,93 @@
+{
+  "history" : [
+    {
+      "actor" : "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "deps" : 0,
+      "message" : "build",
+      "time" : 1704067200
+    },
+    {
+      "actor" : "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "deps" : 1,
+      "message" : "edit",
+      "time" : 1704067260
+    }
+  ],
+  "root" : {
+    "map" : {
+      "config" : {
+        "map" : {
+          "items" : {
+            "list" : [
+              {
+                "str" : "ALPHA"
+              },
+              {
+                "map" : {
+                  "id" : {
+                    "uint" : 7
+                  },
+                  "note" : {
+                    "text" : {
+                      "marks" : [
+
+                      ],
+                      "value" : "nested text"
+                    }
+                  },
+                  "tags" : {
+                    "list" : [
+                      {
+                        "str" : "x"
+                      },
+                      {
+                        "list" : [
+                          {
+                            "int" : 1
+                          },
+                          {
+                            "null" : null
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "str" : "gamma"
+              },
+              {
+                "str" : "epsilon"
+              },
+              {
+                "int" : -1
+              }
+            ]
+          },
+          "name" : {
+            "str" : "corpus"
+          }
+        }
+      },
+      "empty_list" : {
+        "list" : [
+
+        ]
+      },
+      "empty_map" : {
+        "map" : {
+
+        }
+      },
+      "empty_text" : {
+        "text" : {
+          "marks" : [
+
+          ],
+          "value" : ""
+        }
+      }
+    }
+  }
+}

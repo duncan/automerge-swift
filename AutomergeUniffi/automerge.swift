@@ -617,7 +617,11 @@ public protocol DocProtocol: AnyObject, Sendable {
     
     func changeByHash(hash: ChangeHash)  -> Change?
     
+    func changeMetadataByHash(hash: ChangeHash)  -> ChangeMetadata?
+    
     func changes()  -> [ChangeHash]
+    
+    func changesMetadata(heads: [ChangeHash])  -> [ChangeMetadata]
     
     func commitWith(msg: String?, time: Int64) 
     
@@ -685,6 +689,8 @@ public protocol DocProtocol: AnyObject, Sendable {
     
     func joinBlock(obj: ObjId, index: UInt64) throws 
     
+    func lastLocalChange()  -> Change?
+    
     func length(obj: ObjId)  -> UInt64
     
     func lengthAt(obj: ObjId, heads: [ChangeHash])  -> UInt64
@@ -708,6 +714,8 @@ public protocol DocProtocol: AnyObject, Sendable {
     func merge(other: Doc) throws 
     
     func mergeWithPatches(other: Doc) throws  -> [Patch]
+    
+    func missingDeps(heads: [ChangeHash])  -> [ChangeHash]
     
     func objectType(obj: ObjId)  -> ObjType
     
@@ -942,11 +950,31 @@ open func changeByHash(hash: ChangeHash) -> Change?  {
 })
 }
     
+open func changeMetadataByHash(hash: ChangeHash) -> ChangeMetadata?  {
+    return try!  FfiConverterOptionTypeChangeMetadata.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_uniffi_automerge_fn_method_doc_change_metadata_by_hash(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeChangeHash_lower(hash),uniffiCallStatus
+    )
+})
+}
+    
 open func changes() -> [ChangeHash]  {
     return try!  FfiConverterSequenceTypeChangeHash.lift(try! rustCall() {
         uniffiCallStatus in
     uniffi_uniffi_automerge_fn_method_doc_changes(
             self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+    
+open func changesMetadata(heads: [ChangeHash]) -> [ChangeMetadata]  {
+    return try!  FfiConverterSequenceTypeChangeMetadata.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_uniffi_automerge_fn_method_doc_changes_metadata(
+            self.uniffiCloneHandle(),
+        FfiConverterSequenceTypeChangeHash.lower(heads),uniffiCallStatus
     )
 })
 }
@@ -1313,6 +1341,15 @@ open func joinBlock(obj: ObjId, index: UInt64)throws   {try rustCallWithError(Ff
 }
 }
     
+open func lastLocalChange() -> Change?  {
+    return try!  FfiConverterOptionTypeChange.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_uniffi_automerge_fn_method_doc_last_local_change(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+    
 open func length(obj: ObjId) -> UInt64  {
     return try!  FfiConverterUInt64.lift(try! rustCall() {
         uniffiCallStatus in
@@ -1438,6 +1475,16 @@ open func mergeWithPatches(other: Doc)throws  -> [Patch]  {
     uniffi_uniffi_automerge_fn_method_doc_merge_with_patches(
             self.uniffiCloneHandle(),
         FfiConverterTypeDoc_lower(other),uniffiCallStatus
+    )
+})
+}
+    
+open func missingDeps(heads: [ChangeHash]) -> [ChangeHash]  {
+    return try!  FfiConverterSequenceTypeChangeHash.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_uniffi_automerge_fn_method_doc_missing_deps(
+            self.uniffiCloneHandle(),
+        FfiConverterSequenceTypeChangeHash.lower(heads),uniffiCallStatus
     )
 })
 }
@@ -1974,6 +2021,88 @@ public func FfiConverterTypeChange_lower(_ value: Change) -> RustBuffer {
 }
 
 
+public struct ChangeMetadata: Equatable, Hashable {
+    public var actorId: ActorId
+    public var author: [UInt8]?
+    public var seq: UInt64
+    public var startOp: UInt64
+    public var maxOp: UInt64
+    public var message: String?
+    public var deps: [ChangeHash]
+    public var timestamp: Int64
+    public var hash: ChangeHash
+
+    // Default memberwise initializers are never public by default, so we
+    // declare one manually.
+    public init(actorId: ActorId, author: [UInt8]?, seq: UInt64, startOp: UInt64, maxOp: UInt64, message: String?, deps: [ChangeHash], timestamp: Int64, hash: ChangeHash) {
+        self.actorId = actorId
+        self.author = author
+        self.seq = seq
+        self.startOp = startOp
+        self.maxOp = maxOp
+        self.message = message
+        self.deps = deps
+        self.timestamp = timestamp
+        self.hash = hash
+    }
+
+    
+
+    
+}
+
+#if compiler(>=6)
+extension ChangeMetadata: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeChangeMetadata: FfiConverterRustBuffer {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> ChangeMetadata {
+        return
+            try ChangeMetadata(
+                actorId: FfiConverterTypeActorId.read(from: &buf), 
+                author: FfiConverterOptionSequenceUInt8.read(from: &buf), 
+                seq: FfiConverterUInt64.read(from: &buf), 
+                startOp: FfiConverterUInt64.read(from: &buf), 
+                maxOp: FfiConverterUInt64.read(from: &buf), 
+                message: FfiConverterOptionString.read(from: &buf), 
+                deps: FfiConverterSequenceTypeChangeHash.read(from: &buf), 
+                timestamp: FfiConverterInt64.read(from: &buf), 
+                hash: FfiConverterTypeChangeHash.read(from: &buf)
+        )
+    }
+
+    public static func write(_ value: ChangeMetadata, into buf: inout [UInt8]) {
+        FfiConverterTypeActorId.write(value.actorId, into: &buf)
+        FfiConverterOptionSequenceUInt8.write(value.author, into: &buf)
+        FfiConverterUInt64.write(value.seq, into: &buf)
+        FfiConverterUInt64.write(value.startOp, into: &buf)
+        FfiConverterUInt64.write(value.maxOp, into: &buf)
+        FfiConverterOptionString.write(value.message, into: &buf)
+        FfiConverterSequenceTypeChangeHash.write(value.deps, into: &buf)
+        FfiConverterInt64.write(value.timestamp, into: &buf)
+        FfiConverterTypeChangeHash.write(value.hash, into: &buf)
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeChangeMetadata_lift(_ buf: RustBuffer) throws -> ChangeMetadata {
+    return try FfiConverterTypeChangeMetadata.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeChangeMetadata_lower(_ value: ChangeMetadata) -> RustBuffer {
+    return FfiConverterTypeChangeMetadata.lower(value)
+}
+
+
 public struct ElementId: Equatable, Hashable {
     public var obj: ObjId
     public var actor: ActorId
@@ -2253,6 +2382,81 @@ public func FfiConverterTypePathElement_lift(_ buf: RustBuffer) throws -> PathEl
 #endif
 public func FfiConverterTypePathElement_lower(_ value: PathElement) -> RustBuffer {
     return FfiConverterTypePathElement.lower(value)
+}
+
+
+public 
+enum DecodeChangeError: Swift.Error, Equatable, Hashable, Foundation.LocalizedError {
+
+    
+    
+    case Internal(message: String)
+    
+
+    
+
+    
+
+    
+    public var errorDescription: String? {
+        String(reflecting: self)
+    }
+    
+}
+
+#if compiler(>=6)
+extension DecodeChangeError: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeDecodeChangeError: FfiConverterRustBuffer {
+    typealias SwiftType = DecodeChangeError
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> DecodeChangeError {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+
+        
+
+        
+        case 1: return .Internal(
+            message: try FfiConverterString.read(from: &buf)
+        )
+        
+
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: DecodeChangeError, into buf: inout [UInt8]) {
+        switch value {
+
+        
+
+        
+        case .Internal(_ /* message is ignored*/):
+            writeInt(&buf, Int32(1))
+
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDecodeChangeError_lift(_ buf: RustBuffer) throws -> DecodeChangeError {
+    return try FfiConverterTypeDecodeChangeError.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeDecodeChangeError_lower(_ value: DecodeChangeError) -> RustBuffer {
+    return FfiConverterTypeDecodeChangeError.lower(value)
 }
 
 
@@ -3557,6 +3761,30 @@ fileprivate struct FfiConverterOptionTypeChange: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterOptionTypeChangeMetadata: FfiConverterRustBuffer {
+    typealias SwiftType = ChangeMetadata?
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        guard let value = value else {
+            writeInt(&buf, Int8(0))
+            return
+        }
+        writeInt(&buf, Int8(1))
+        FfiConverterTypeChangeMetadata.write(value, into: &buf)
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
+        switch try readInt(&buf) as Int8 {
+        case 0: return nil
+        case 1: return try FfiConverterTypeChangeMetadata.read(from: &buf)
+        default: throw UniffiInternalError.unexpectedOptionalTag
+        }
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterOptionTypeValue: FfiConverterRustBuffer {
     typealias SwiftType = Value?
 
@@ -3695,6 +3923,31 @@ fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
         seq.reserveCapacity(Int(len))
         for _ in 0 ..< len {
             seq.append(try FfiConverterString.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeChangeMetadata: FfiConverterRustBuffer {
+    typealias SwiftType = [ChangeMetadata]
+
+    public static func write(_ value: [ChangeMetadata], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeChangeMetadata.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ChangeMetadata] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [ChangeMetadata]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeChangeMetadata.read(from: &buf))
         }
         return seq
     }
@@ -4237,6 +4490,14 @@ public func FfiConverterTypeObjId_lower(_ value: ObjId) -> RustBuffer {
     return FfiConverterTypeObjId.lower(value)
 }
 
+public func decodeChange(bytes: [UInt8])throws  -> Change  {
+    return try  FfiConverterTypeChange_lift(try rustCallWithError(FfiConverterTypeDecodeChangeError_lift) {
+        uniffiCallStatus in
+    uniffi_uniffi_automerge_fn_func_decode_change(
+        FfiConverterSequenceUInt8.lower(bytes),uniffiCallStatus
+    )
+})
+}
 public func root() -> ObjId  {
     return try!  FfiConverterTypeObjId_lift(try! rustCall() {
         uniffiCallStatus in
@@ -4259,6 +4520,9 @@ private let initializationResult: InitializationResult = {
     let scaffolding_contract_version = ffi_uniffi_automerge_uniffi_contract_version()
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_func_decode_change() != 22168) {
+        return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_func_root() != 5184) {
         return InitializationResult.apiChecksumMismatch
@@ -4287,7 +4551,13 @@ private let initializationResult: InitializationResult = {
     if (uniffi_uniffi_automerge_checksum_method_doc_change_by_hash() != 47725) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_uniffi_automerge_checksum_method_doc_change_metadata_by_hash() != 5974) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_uniffi_automerge_checksum_method_doc_changes() != 44211) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_changes_metadata() != 5868) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_method_doc_commit_with() != 64670) {
@@ -4389,6 +4659,9 @@ private let initializationResult: InitializationResult = {
     if (uniffi_uniffi_automerge_checksum_method_doc_join_block() != 51758) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_uniffi_automerge_checksum_method_doc_last_local_change() != 5249) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_uniffi_automerge_checksum_method_doc_length() != 7751) {
         return InitializationResult.apiChecksumMismatch
     }
@@ -4423,6 +4696,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_method_doc_merge_with_patches() != 1990) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_missing_deps() != 63937) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_method_doc_object_type() != 17107) {

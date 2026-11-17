@@ -1,3 +1,4 @@
+import enum AutomergeUniffi.DecodeChangeError
 import enum AutomergeUniffi.DecodeSyncStateError
 import enum AutomergeUniffi.DocError
 import enum AutomergeUniffi.LoadError
@@ -5,6 +6,7 @@ import enum AutomergeUniffi.ReceiveSyncError
 import Foundation
 
 typealias FfiDocError = AutomergeUniffi.DocError
+typealias FfiDecodeChangeError = AutomergeUniffi.DecodeChangeError
 typealias FfiDecodeSyncStateError = AutomergeUniffi.DecodeSyncStateError
 typealias FfiLoadError = AutomergeUniffi.LoadError
 typealias FfiReceiveSyncError = AutomergeUniffi.ReceiveSyncError
@@ -43,6 +45,24 @@ public struct DecodeSyncStateError: LocalizedError {
         switch inner {
         case let .Internal(message: msg):
             return "Error decoding sync state: \(msg)"
+        }
+    }
+}
+
+/// An error that indicates the bytes of a change could not be decoded.
+///
+/// The error is specific to the Rust language binding infrastructure.
+public struct DecodeChangeError: LocalizedError {
+    let inner: FfiDecodeChangeError
+
+    init(_ inner: FfiDecodeChangeError) {
+        self.inner = inner
+    }
+
+    public var errorDescription: String? {
+        switch inner {
+        case let .Internal(message: msg):
+            return "Error decoding a change: \(msg)"
         }
     }
 }
@@ -96,6 +116,7 @@ enum UnexpectedFailure {
     case load
     case receiveSync
     case decodeSyncState
+    case decodeChange
 
     func error(_ underlying: any Error) -> any Error {
         let message = "automerge failed unexpectedly: \(underlying)"
@@ -104,6 +125,7 @@ enum UnexpectedFailure {
         case .load: return LoadError(.Internal(message: message))
         case .receiveSync: return ReceiveSyncError(.Internal(message: message))
         case .decodeSyncState: return DecodeSyncStateError(.Internal(message: message))
+        case .decodeChange: return DecodeChangeError(.Internal(message: message))
         }
     }
 }
@@ -119,6 +141,8 @@ func wrappedErrors<T>(unexpected: UnexpectedFailure = .doc, _ f: () throws -> T)
         throw ReceiveSyncError(error)
     } catch let error as FfiDecodeSyncStateError {
         throw DecodeSyncStateError(error)
+    } catch let error as FfiDecodeChangeError {
+        throw DecodeChangeError(error)
     } catch {
         // The FFI calls only throw the errors above, or UniFFI's error for a Rust panic.
         throw unexpected.error(error)

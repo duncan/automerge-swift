@@ -5,7 +5,7 @@ use actor_id::ActorId;
 mod cursor;
 use cursor::{Cursor, Position};
 mod change;
-use change::Change;
+use change::{decode_change, Change, ChangeMetadata, DecodeChangeError};
 mod change_hash;
 use change_hash::ChangeHash;
 mod doc;

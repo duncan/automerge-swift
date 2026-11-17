@@ -1,5 +1,7 @@
 namespace automerge {
     ObjId root();
+    [Throws=DecodeChangeError]
+    Change decode_change(sequence<u8> bytes);
 };
 
 [Custom]
@@ -64,6 +66,11 @@ enum ReceiveSyncError {
 
 [Error]
 enum DecodeSyncStateError {
+    "Internal",
+};
+
+[Error]
+enum DecodeChangeError {
     "Internal",
 };
 
@@ -136,6 +143,18 @@ dictionary Change {
     sequence<ChangeHash> deps;
     i64 timestamp;
     sequence<u8> bytes;
+    ChangeHash hash;
+};
+
+dictionary ChangeMetadata {
+    ActorId actor_id;
+    sequence<u8>? author;
+    u64 seq;
+    u64 start_op;
+    u64 max_op;
+    string? message;
+    sequence<ChangeHash> deps;
+    i64 timestamp;
     ChangeHash hash;
 };
 
@@ -297,6 +316,10 @@ interface Doc {
     sequence<ChangeHash> changes();
 
     Change? change_by_hash(ChangeHash hash);
+    sequence<ChangeMetadata> changes_metadata(sequence<ChangeHash> heads);
+    ChangeMetadata? change_metadata_by_hash(ChangeHash hash);
+    Change? last_local_change();
+    sequence<ChangeHash> missing_deps(sequence<ChangeHash> heads);
 
     sequence<Patch> difference(sequence<ChangeHash> before, sequence<ChangeHash> after);
 

@@ -1605,6 +1605,65 @@ public final class Document: @unchecked Sendable {
         }
     }
 
+    /// Returns what the document records about the change with the hash you provide.
+    ///
+    /// This is cheaper than ``change(hash:)`` when you don't need the change's encoded bytes.
+    ///
+    /// - Parameter hash: The hash of the change to look up.
+    /// - Returns: The metadata of the change, or `nil` if the document doesn't have it.
+    public func changeMetadata(hash: ChangeHash) -> ChangeMetadata? {
+        lock {
+            self.doc.wrapErrors { $0.changeMetadataByHash(hash: hash.bytes) }.map(ChangeMetadata.init)
+        }
+    }
+
+    /// Returns what the document records about its changes, in the order of ``getHistory()``.
+    ///
+    /// Use this to describe a document's history, for example who changed it and when, without reading
+    /// the encoded bytes of every change:
+    ///
+    /// ```swift
+    /// let lastSeen = doc.heads()
+    /// // ... later, after syncing with other peers
+    /// let newChanges = doc.changeMetadata(since: lastSeen)
+    /// ```
+    ///
+    /// - Parameter heads: A point in the document's history. The result leaves out the changes at or
+    /// before it. Leave it empty to get every change.
+    /// - Returns: The metadata of each change, with every change after the changes it depends upon.
+    public func changeMetadata(since heads: Set<ChangeHash> = []) -> [ChangeMetadata] {
+        lock {
+            self.doc.wrapErrors { $0.changesMetadata(heads: heads.map(\.bytes)) }.map(ChangeMetadata.init)
+        }
+    }
+
+    /// Returns the most recent change this document made itself, as opposed to one it received.
+    ///
+    /// Use this to send what you just changed to other peers: its ``Change/bytes`` are what
+    /// ``applyEncodedChanges(encoded:)`` accepts.
+    ///
+    /// - Returns: The last change made with this document's ``actor``, or `nil` if it hasn't made one.
+    public func lastLocalChange() -> Change? {
+        lock {
+            self.doc.wrapErrors { $0.lastLocalChange() }.map(Change.init)
+        }
+    }
+
+    /// Returns the hashes of changes the document needs but doesn't have.
+    ///
+    /// A document can receive a change before the changes it depends upon, for example when changes arrive
+    /// out of order. It holds such a change without applying it, so the change doesn't appear in the
+    /// document until the missing ones arrive. Use this to find out which changes to ask a peer for.
+    ///
+    /// - Parameter heads: Hashes to check as well, such as the heads of a peer's copy. The result includes
+    /// those the document doesn't have.
+    /// - Returns: The hashes of the missing changes, or an empty set if the document is complete.
+    public func missingDependencies(heads: Set<ChangeHash> = []) -> Set<ChangeHash> {
+        lock {
+            Set(self.doc.wrapErrors { $0.missingDeps(heads: heads.map(\.bytes)) }.map(ChangeHash.init(bytes:)))
+        }
+    }
+
     /// Generates patches between two points in the document history.
     ///
     /// Use:

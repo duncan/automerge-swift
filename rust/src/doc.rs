@@ -13,7 +13,7 @@ use crate::span::{hydrated_map, map_into_hydrate, HydratedValue, Span};
 use crate::text_encoding::TextEncoding;
 
 use crate::{
-    Change, ChangeHash, Cursor, ObjId, ObjType, PathElement, ScalarValue, SyncState, Value,
+    Change, ChangeHash, ChangeMetadata, Cursor, ObjId, ObjType, PathElement, ScalarValue, SyncState, Value,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -892,6 +892,41 @@ impl Doc {
         let doc = crate::lock::write(&self.0);
         doc.get_change_by_hash(&am::ChangeHash::from(hash))
             .map(|m| Change::from(m.clone()))
+    }
+
+    pub fn changes_metadata(&self, heads: Vec<ChangeHash>) -> Vec<ChangeMetadata> {
+        let heads = heads
+            .into_iter()
+            .map(am::ChangeHash::from)
+            .collect::<Vec<_>>();
+        let mut doc = crate::lock::write(&self.0);
+        doc.get_changes_meta(&heads)
+            .into_iter()
+            .map(ChangeMetadata::from)
+            .collect()
+    }
+
+    pub fn change_metadata_by_hash(&self, hash: ChangeHash) -> Option<ChangeMetadata> {
+        let mut doc = crate::lock::write(&self.0);
+        doc.get_change_meta_by_hash(&am::ChangeHash::from(hash))
+            .map(ChangeMetadata::from)
+    }
+
+    pub fn last_local_change(&self) -> Option<Change> {
+        let mut doc = crate::lock::write(&self.0);
+        doc.get_last_local_change().map(Change::from)
+    }
+
+    pub fn missing_deps(&self, heads: Vec<ChangeHash>) -> Vec<ChangeHash> {
+        let heads = heads
+            .into_iter()
+            .map(am::ChangeHash::from)
+            .collect::<Vec<_>>();
+        let doc = crate::lock::write(&self.0);
+        doc.get_missing_deps(&heads)
+            .into_iter()
+            .map(ChangeHash::from)
+            .collect()
     }
 
     pub fn path(&self, obj: ObjId) -> Result<Vec<PathElement>, DocError> {

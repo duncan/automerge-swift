@@ -104,15 +104,16 @@ jobs:
       - name: Build tests
         run: |
           swift build --swift-sdk swift-6.4.2-RELEASE_wasm --build-tests -Xlinker "`pwd`/libuniffi_automerge.a" -Xlinker -z -Xlinker stack-size=$((1024 * 1024))
-          # Ask SwiftPM where it put the test binary, since its folder and extension depend on the Swift release.
+          # Ask SwiftPM where it put the test binary, since its folder and name depend on the Swift release.
           bin="$(swift build --swift-sdk swift-6.4.2-RELEASE_wasm --show-bin-path)"
-          for name in AutomergePackageTests.xctest AutomergePackageTests.wasm; do
+          # Swift 6.4's build system names it AutomergeTests-test-runner.wasm; earlier releases, AutomergePackageTests.xctest.
+          for name in AutomergeTests-test-runner.wasm AutomergePackageTests.xctest; do
             if [ -f "$bin/$name" ]; then
               echo "AUTOMERGE_TESTS=$bin/$name" >> "$GITHUB_ENV"
               exit 0
             fi
           done
-          echo "::error::No AutomergePackageTests binary in $bin:"
+          echo "::error::No test binary in $bin:"
           ls -la "$bin"
           exit 1
       - name: Run tests

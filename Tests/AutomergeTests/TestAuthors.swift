@@ -1,4 +1,4 @@
-import Automerge
+@testable import Automerge
 import XCTest
 
 class AuthorsTestCase: XCTestCase {
@@ -44,14 +44,25 @@ class AuthorsTestCase: XCTestCase {
         XCTAssertEqual(doc.actors(for: bob), [])
     }
 
-    func testLookupsSeeAPendingChange() throws {
+    func testLookupsReadOnlyCommittedChanges() throws {
         let doc = Document()
         doc.author = alice
         try doc.put(obj: ObjId.ROOT, key: "key", value: .String("value"))
 
+        XCTAssertEqual(doc.authors, [], "A pending change isn't listed")
+        XCTAssertNil(doc.author(for: doc.actor))
+        XCTAssertEqual(doc.actors(for: alice), [])
+
+        let timestamp = Date(timeIntervalSince1970: 1000)
+        doc.commitWith(message: "first", timestamp: timestamp)
         XCTAssertEqual(doc.authors, [alice])
         XCTAssertEqual(doc.author(for: doc.actor), alice)
         XCTAssertEqual(doc.actors(for: alice), [doc.actor])
+
+        let change = try XCTUnwrap(doc.change(hash: XCTUnwrap(doc.heads().first)))
+        XCTAssertEqual(change.message, "first", "Looking up authors leaves the pending change to commitWith")
+        XCTAssertEqual(change.timestamp, timestamp)
+        XCTAssertEqual(change.author, alice)
     }
 
     func testOnlyAnActorsFirstChangeCarriesTheAuthor() throws {
@@ -141,6 +152,24 @@ class AuthorsTestCase: XCTestCase {
         XCTAssertEqual(loaded.authors, [alice])
     }
 
+    func testAnActorCanBeReusedWithTheSameAuthor() throws {
+        let reused = ActorId()
+        let doc = Document()
+        doc.author = alice
+        doc.actor = reused
+        _ = try makeChange(doc, value: "one")
+
+        let loaded = try Document(doc.save())
+        loaded.author = alice
+        loaded.actor = reused
+        _ = try makeChange(loaded, value: "two")
+
+        XCTAssertEqual(loaded.author(for: reused), alice)
+        XCTAssertEqual(loaded.authors, [alice])
+        try doc.merge(other: loaded)
+        XCTAssertEqual(doc.actors(for: alice), [reused])
+    }
+
     func testSettingTheAuthorCommitsPendingChangesWithThePreviousActor() throws {
         let doc = Document()
         let original = doc.actor
@@ -152,6 +181,23 @@ class AuthorsTestCase: XCTestCase {
         XCTAssertEqual(actors, [original, doc.actor])
         XCTAssertNil(doc.author(for: original))
         XCTAssertEqual(doc.author(for: doc.actor), alice)
+    }
+
+    func testAnEmptyAuthorFromAnotherPeerCanBeRead() throws {
+        // AuthorId(data:) refuses empty bytes, but automerge allows an empty author, so another peer's
+        // change can record one.
+        let empty = AuthorId(ffi: [])
+        let peer = Document()
+        peer.author = empty
+        _ = try makeChange(peer)
+
+        let doc = try Document(peer.save())
+        let change = try XCTUnwrap(doc.change(hash: XCTUnwrap(doc.heads().first)))
+        XCTAssertEqual(change.author?.data, Data())
+        XCTAssertEqual(doc.authors, [empty])
+        XCTAssertEqual(doc.author(for: peer.actor), empty)
+        XCTAssertEqual(doc.actors(for: empty), [peer.actor])
+        XCTAssertNil(AuthorId(data: Data()), "Empty bytes still can't make a new author ID")
     }
 
     func testAuthorsAreSortedByTheirBytes() throws {

@@ -11,10 +11,17 @@ import Foundation
 /// change, and every peer that receives that change can read it with ``Document/author(for:)``
 /// or ``Change/author``.
 ///
-/// To write changes as an author, set ``Document/author`` before the document's first change
-/// with its current actor. See ``Document/author`` for how it interacts with ``Document/actor``.
+/// To write changes as an author, set ``Document/author``. See ``Document/author`` for how it interacts
+/// with ``Document/actor``.
+///
+/// Author IDs are stored with a document's history and sent to every peer, and can't be removed. Don't
+/// put personal information, such as an email address, in one. Use an opaque identifier that your app
+/// maps to the person or app it stands for.
 public struct AuthorId: Equatable, Hashable, Sendable {
     /// The bytes of the author ID.
+    ///
+    /// An author ID you create is never empty. One read from a document can be, if another peer's
+    /// change recorded an empty author.
     public let data: Data
 
     /// Creates an author ID from the bytes you provide.

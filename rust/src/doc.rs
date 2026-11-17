@@ -98,8 +98,12 @@ impl Doc {
         crate::lock::write(&self.0).set_author(author.map(am::Author::from));
     }
 
+    // The author lookups commit pending operations first, as heads() does: automerge records an
+    // actor's author when its first change is committed, so a lookup straight after an edit would
+    // otherwise miss it.
     pub fn authors(&self) -> Vec<Vec<u8>> {
-        let doc = crate::lock::read(&self.0);
+        let mut doc = crate::lock::write(&self.0);
+        doc.commit();
         doc.get_authors()
             .iter()
             .map(|author| author.as_bytes().to_vec())
@@ -107,13 +111,15 @@ impl Doc {
     }
 
     pub fn author_for_actor(&self, actor: ActorId) -> Option<Vec<u8>> {
-        let doc = crate::lock::read(&self.0);
+        let mut doc = crate::lock::write(&self.0);
+        doc.commit();
         doc.get_author_for_actor(&actor.into())
             .map(|author| author.as_bytes().to_vec())
     }
 
     pub fn actors_for_author(&self, author: Vec<u8>) -> Vec<ActorId> {
-        let doc = crate::lock::read(&self.0);
+        let mut doc = crate::lock::write(&self.0);
+        doc.commit();
         doc.get_actors_for_author(&am::Author::from(author))
             .iter()
             .map(ActorId::from)

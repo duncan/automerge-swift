@@ -111,6 +111,7 @@ dictionary PathElement {
 
 dictionary Change {
     ActorId actor_id;
+    sequence<u8>? author;
     string? message;
     sequence<ChangeHash> deps;
     i64 timestamp;
@@ -155,6 +156,11 @@ interface Doc {
     ActorId actor_id();
     TextEncoding text_encoding();
     void set_actor(ActorId actor);
+    sequence<u8>? author();
+    void set_author(sequence<u8>? author);
+    sequence<sequence<u8>> authors();
+    sequence<u8>? author_for_actor(ActorId actor);
+    sequence<ActorId> actors_for_author(sequence<u8> author);
     Doc fork();
     [Throws=DocError]
     Doc fork_at(sequence<ChangeHash> heads);

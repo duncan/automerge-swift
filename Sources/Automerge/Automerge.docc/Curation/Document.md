@@ -12,6 +12,14 @@
 
 - ``actor``
 - ``ActorId``
+
+### Attributing changes to authors
+
+- ``author``
+- ``AuthorId``
+- ``authors``
+- ``author(for:)``
+- ``actors(for:)``
 - ``objectType(obj:)``
 - ``path(obj:)``
 - ``lookupPath(path:)``

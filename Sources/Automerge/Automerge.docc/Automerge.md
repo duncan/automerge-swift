@@ -92,6 +92,7 @@ Read <doc:FiveMinuteQuickstart> to get a quick taste of how to use Automerge, or
 - ``Automerge/Prop``
 - ``Automerge/DeleteSeq``
 - ``Automerge/ActorId``
+- ``Automerge/AuthorId``
 
 ### Converting Scalar Values to Local Types
 

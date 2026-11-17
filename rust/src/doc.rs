@@ -71,6 +71,40 @@ impl Doc {
         self.0.write().unwrap().set_actor(actor.into());
     }
 
+    pub fn author(&self) -> Option<Vec<u8>> {
+        let doc = self.0.read().unwrap();
+        doc.get_author().map(|author| author.as_bytes().to_vec())
+    }
+
+    pub fn set_author(&self, author: Option<Vec<u8>>) {
+        self.0
+            .write()
+            .unwrap()
+            .set_author(author.map(am::Author::from));
+    }
+
+    pub fn authors(&self) -> Vec<Vec<u8>> {
+        let doc = self.0.read().unwrap();
+        doc.get_authors()
+            .iter()
+            .map(|author| author.as_bytes().to_vec())
+            .collect()
+    }
+
+    pub fn author_for_actor(&self, actor: ActorId) -> Option<Vec<u8>> {
+        let doc = self.0.read().unwrap();
+        doc.get_author_for_actor(&actor.into())
+            .map(|author| author.as_bytes().to_vec())
+    }
+
+    pub fn actors_for_author(&self, author: Vec<u8>) -> Vec<ActorId> {
+        let doc = self.0.read().unwrap();
+        doc.get_actors_for_author(&am::Author::from(author))
+            .iter()
+            .map(ActorId::from)
+            .collect()
+    }
+
     pub fn put_in_map(&self, obj: ObjId, key: String, value: ScalarValue) -> Result<(), DocError> {
         let obj = am::ObjId::from(obj);
         let mut doc = self.0.write().unwrap();

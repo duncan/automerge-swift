@@ -6,6 +6,7 @@
 
 - ``Change/hash``
 - ``Change/actorId``
+- ``Change/author``
 - ``Change/deps``
 - ``Change/bytes``
 - ``ChangeHash/debugDescription``

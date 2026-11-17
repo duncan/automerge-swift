@@ -120,10 +120,16 @@ jobs:
       - name: Run XCTest tests
         run: wasmtime run --wasm max-wasm-stack=$((1024 * 1024)) --dir . "$AUTOMERGE_TESTS"
       # Run directly, the test binary only runs XCTest; Swift Testing needs to be asked for.
-      # Bundle.module looks for test resources at their absolute build path, so the checkout
-      # is also mapped into the guest at the same path.
+      # Bundle.module looks for the test resource bundle beside the test binary, so the tests run
+      # from the binary's folder. The checkout is also mapped into the guest at its own path, for
+      # releases that look at the absolute build path instead.
       - name: Run Swift Testing tests
-        run: wasmtime run --wasm max-wasm-stack=$((1024 * 1024)) --dir . --dir "$PWD::$PWD" "$AUTOMERGE_TESTS" --testing-library swift-testing
+        run: |
+          echo "::group::Generated resource bundle accessor"
+          find .build -name resource_bundle_accessor.swift -path '*AutomergeTests*' -exec cat {} \;
+          echo "::endgroup::"
+          cd "$(dirname "$AUTOMERGE_TESTS")"
+          wasmtime run --wasm max-wasm-stack=$((1024 * 1024)) --dir . --dir "$GITHUB_WORKSPACE::$GITHUB_WORKSPACE" "$AUTOMERGE_TESTS" --testing-library swift-testing
 
   rustfmt:
     runs-on: macos-latest

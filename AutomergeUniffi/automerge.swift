@@ -603,9 +603,17 @@ public protocol DocProtocol: AnyObject, Sendable {
     
     func actorId()  -> ActorId
     
+    func actorsForAuthor(author: [UInt8])  -> [ActorId]
+    
     func applyEncodedChanges(changes: [UInt8]) throws 
     
     func applyEncodedChangesWithPatches(changes: [UInt8]) throws  -> [Patch]
+    
+    func author()  -> [UInt8]?
+    
+    func authorForActor(actor: ActorId)  -> [UInt8]?
+    
+    func authors()  -> [[UInt8]]
     
     func changeByHash(hash: ChangeHash)  -> Change?
     
@@ -720,6 +728,8 @@ public protocol DocProtocol: AnyObject, Sendable {
     func save()  -> [UInt8]
     
     func setActor(actor: ActorId) 
+    
+    func setAuthor(author: [UInt8]?) 
     
     func spans(obj: ObjId) throws  -> [Span]
     
@@ -865,6 +875,16 @@ open func actorId() -> ActorId  {
 })
 }
     
+open func actorsForAuthor(author: [UInt8]) -> [ActorId]  {
+    return try!  FfiConverterSequenceTypeActorId.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_uniffi_automerge_fn_method_doc_actors_for_author(
+            self.uniffiCloneHandle(),
+        FfiConverterSequenceUInt8.lower(author),uniffiCallStatus
+    )
+})
+}
+    
 open func applyEncodedChanges(changes: [UInt8])throws   {try rustCallWithError(FfiConverterTypeDocError_lift) {
         uniffiCallStatus in
     uniffi_uniffi_automerge_fn_method_doc_apply_encoded_changes(
@@ -880,6 +900,34 @@ open func applyEncodedChangesWithPatches(changes: [UInt8])throws  -> [Patch]  {
     uniffi_uniffi_automerge_fn_method_doc_apply_encoded_changes_with_patches(
             self.uniffiCloneHandle(),
         FfiConverterSequenceUInt8.lower(changes),uniffiCallStatus
+    )
+})
+}
+    
+open func author() -> [UInt8]?  {
+    return try!  FfiConverterOptionSequenceUInt8.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_uniffi_automerge_fn_method_doc_author(
+            self.uniffiCloneHandle(),uniffiCallStatus
+    )
+})
+}
+    
+open func authorForActor(actor: ActorId) -> [UInt8]?  {
+    return try!  FfiConverterOptionSequenceUInt8.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_uniffi_automerge_fn_method_doc_author_for_actor(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeActorId_lower(actor),uniffiCallStatus
+    )
+})
+}
+    
+open func authors() -> [[UInt8]]  {
+    return try!  FfiConverterSequenceSequenceUInt8.lift(try! rustCall() {
+        uniffiCallStatus in
+    uniffi_uniffi_automerge_fn_method_doc_authors(
+            self.uniffiCloneHandle(),uniffiCallStatus
     )
 })
 }
@@ -1499,6 +1547,15 @@ open func setActor(actor: ActorId)  {try! rustCall() {
 }
 }
     
+open func setAuthor(author: [UInt8]?)  {try! rustCall() {
+        uniffiCallStatus in
+    uniffi_uniffi_automerge_fn_method_doc_set_author(
+            self.uniffiCloneHandle(),
+        FfiConverterOptionSequenceUInt8.lower(author),uniffiCallStatus
+    )
+}
+}
+    
 open func spans(obj: ObjId)throws  -> [Span]  {
     return try  FfiConverterSequenceTypeSpan.lift(try rustCallWithError(FfiConverterTypeDocError_lift) {
         uniffiCallStatus in
@@ -1845,6 +1902,7 @@ public func FfiConverterTypeSyncState_lower(_ value: SyncState) -> UInt64 {
 
 public struct Change: Equatable, Hashable {
     public var actorId: ActorId
+    public var author: [UInt8]?
     public var message: String?
     public var deps: [ChangeHash]
     public var timestamp: Int64
@@ -1853,8 +1911,9 @@ public struct Change: Equatable, Hashable {
 
     // Default memberwise initializers are never public by default, so we
     // declare one manually.
-    public init(actorId: ActorId, message: String?, deps: [ChangeHash], timestamp: Int64, bytes: [UInt8], hash: ChangeHash) {
+    public init(actorId: ActorId, author: [UInt8]?, message: String?, deps: [ChangeHash], timestamp: Int64, bytes: [UInt8], hash: ChangeHash) {
         self.actorId = actorId
+        self.author = author
         self.message = message
         self.deps = deps
         self.timestamp = timestamp
@@ -1879,6 +1938,7 @@ public struct FfiConverterTypeChange: FfiConverterRustBuffer {
         return
             try Change(
                 actorId: FfiConverterTypeActorId.read(from: &buf), 
+                author: FfiConverterOptionSequenceUInt8.read(from: &buf), 
                 message: FfiConverterOptionString.read(from: &buf), 
                 deps: FfiConverterSequenceTypeChangeHash.read(from: &buf), 
                 timestamp: FfiConverterInt64.read(from: &buf), 
@@ -1889,6 +1949,7 @@ public struct FfiConverterTypeChange: FfiConverterRustBuffer {
 
     public static func write(_ value: Change, into buf: inout [UInt8]) {
         FfiConverterTypeActorId.write(value.actorId, into: &buf)
+        FfiConverterOptionSequenceUInt8.write(value.author, into: &buf)
         FfiConverterOptionString.write(value.message, into: &buf)
         FfiConverterSequenceTypeChangeHash.write(value.deps, into: &buf)
         FfiConverterInt64.write(value.timestamp, into: &buf)
@@ -3867,6 +3928,56 @@ fileprivate struct FfiConverterSequenceTypeValue: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterSequenceSequenceUInt8: FfiConverterRustBuffer {
+    typealias SwiftType = [[UInt8]]
+
+    public static func write(_ value: [[UInt8]], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterSequenceUInt8.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [[UInt8]] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [[UInt8]]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterSequenceUInt8.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+fileprivate struct FfiConverterSequenceTypeActorId: FfiConverterRustBuffer {
+    typealias SwiftType = [ActorId]
+
+    public static func write(_ value: [ActorId], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for item in value {
+            FfiConverterTypeActorId.write(item, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [ActorId] {
+        let len: Int32 = try readInt(&buf)
+        var seq = [ActorId]()
+        seq.reserveCapacity(Int(len))
+        for _ in 0 ..< len {
+            seq.append(try FfiConverterTypeActorId.read(from: &buf))
+        }
+        return seq
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterSequenceTypeChangeHash: FfiConverterRustBuffer {
     typealias SwiftType = [ChangeHash]
 
@@ -4155,10 +4266,22 @@ private let initializationResult: InitializationResult = {
     if (uniffi_uniffi_automerge_checksum_method_doc_actor_id() != 47661) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_uniffi_automerge_checksum_method_doc_actors_for_author() != 46961) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_uniffi_automerge_checksum_method_doc_apply_encoded_changes() != 30195) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_method_doc_apply_encoded_changes_with_patches() != 48034) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_author() != 39113) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_author_for_actor() != 7884) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_authors() != 39321) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_method_doc_change_by_hash() != 47725) {
@@ -4330,6 +4453,9 @@ private let initializationResult: InitializationResult = {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_method_doc_set_actor() != 47638) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_set_author() != 23219) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_method_doc_spans() != 37591) {

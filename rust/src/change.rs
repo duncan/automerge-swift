@@ -4,6 +4,7 @@ use crate::{ActorId, ChangeHash};
 
 pub struct Change {
     pub actor_id: ActorId,
+    pub author: Option<Vec<u8>>,
     pub message: Option<String>,
     pub deps: Vec<ChangeHash>,
     pub timestamp: i64,
@@ -15,6 +16,7 @@ impl From<am::Change> for Change {
     fn from(mut value: am::Change) -> Self {
         Change {
             actor_id: value.actor_id().into(),
+            author: value.author().map(|author| author.as_bytes().to_vec()),
             message: value.message().map(String::from),
             deps: value.deps().into_iter().map(ChangeHash::from).collect(),
             timestamp: value.timestamp(),

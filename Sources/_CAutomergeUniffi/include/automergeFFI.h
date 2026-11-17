@@ -289,6 +289,11 @@ uint64_t uniffi_uniffi_automerge_fn_constructor_doc_rescue(RustBuffer bytes, Rus
 RustBuffer uniffi_uniffi_automerge_fn_method_doc_actor_id(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_ACTORS_FOR_AUTHOR
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_ACTORS_FOR_AUTHOR
+RustBuffer uniffi_uniffi_automerge_fn_method_doc_actors_for_author(uint64_t ptr, RustBuffer author, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_APPLY_ENCODED_CHANGES
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_APPLY_ENCODED_CHANGES
 void uniffi_uniffi_automerge_fn_method_doc_apply_encoded_changes(uint64_t ptr, RustBuffer changes, RustCallStatus *_Nonnull out_status
@@ -297,6 +302,21 @@ void uniffi_uniffi_automerge_fn_method_doc_apply_encoded_changes(uint64_t ptr, R
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_APPLY_ENCODED_CHANGES_WITH_PATCHES
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_APPLY_ENCODED_CHANGES_WITH_PATCHES
 RustBuffer uniffi_uniffi_automerge_fn_method_doc_apply_encoded_changes_with_patches(uint64_t ptr, RustBuffer changes, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_AUTHOR
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_AUTHOR
+RustBuffer uniffi_uniffi_automerge_fn_method_doc_author(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_AUTHOR_FOR_ACTOR
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_AUTHOR_FOR_ACTOR
+RustBuffer uniffi_uniffi_automerge_fn_method_doc_author_for_actor(uint64_t ptr, RustBuffer actor, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_AUTHORS
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_AUTHORS
+RustBuffer uniffi_uniffi_automerge_fn_method_doc_authors(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_CHANGE_BY_HASH
@@ -582,6 +602,11 @@ RustBuffer uniffi_uniffi_automerge_fn_method_doc_save(uint64_t ptr, RustCallStat
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_SET_ACTOR
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_SET_ACTOR
 void uniffi_uniffi_automerge_fn_method_doc_set_actor(uint64_t ptr, RustBuffer actor, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_SET_AUTHOR
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_SET_AUTHOR
+void uniffi_uniffi_automerge_fn_method_doc_set_author(uint64_t ptr, RustBuffer author, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_SPANS
@@ -963,6 +988,12 @@ uint16_t uniffi_uniffi_automerge_checksum_method_doc_actor_id(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_ACTORS_FOR_AUTHOR
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_ACTORS_FOR_AUTHOR
+uint16_t uniffi_uniffi_automerge_checksum_method_doc_actors_for_author(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_APPLY_ENCODED_CHANGES
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_APPLY_ENCODED_CHANGES
 uint16_t uniffi_uniffi_automerge_checksum_method_doc_apply_encoded_changes(void
@@ -972,6 +1003,24 @@ uint16_t uniffi_uniffi_automerge_checksum_method_doc_apply_encoded_changes(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_APPLY_ENCODED_CHANGES_WITH_PATCHES
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_APPLY_ENCODED_CHANGES_WITH_PATCHES
 uint16_t uniffi_uniffi_automerge_checksum_method_doc_apply_encoded_changes_with_patches(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_AUTHOR
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_AUTHOR
+uint16_t uniffi_uniffi_automerge_checksum_method_doc_author(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_AUTHOR_FOR_ACTOR
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_AUTHOR_FOR_ACTOR
+uint16_t uniffi_uniffi_automerge_checksum_method_doc_author_for_actor(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_AUTHORS
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_AUTHORS
+uint16_t uniffi_uniffi_automerge_checksum_method_doc_authors(void
     
 );
 #endif
@@ -1314,6 +1363,12 @@ uint16_t uniffi_uniffi_automerge_checksum_method_doc_save(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_SET_ACTOR
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_SET_ACTOR
 uint16_t uniffi_uniffi_automerge_checksum_method_doc_set_actor(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_SET_AUTHOR
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_SET_AUTHOR
+uint16_t uniffi_uniffi_automerge_checksum_method_doc_set_author(void
     
 );
 #endif

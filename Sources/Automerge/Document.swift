@@ -69,6 +69,63 @@ public final class Document: @unchecked Sendable {
         }
     }
 
+    /// The author of the changes this document makes, if it has one.
+    ///
+    /// Automerge records the author with the first change that the document's current actor makes, so
+    /// every peer that receives that change can read it with ``author(for:)`` or ``Change/author``. An actor
+    /// has at most one author, and it can't change once the actor's first change is recorded.
+    ///
+    /// Setting an author that differs from the current one also gives the document a new, random
+    /// ``actor``, so the new author's changes start with a fresh actor. Setting the same author again
+    /// changes nothing. To use an actor you choose, set the author first and then set ``actor``, before the
+    /// document makes any changes with that actor. If that actor has already made a change, its later
+    /// changes don't record the author.
+    ///
+    /// Setting the author commits any pending changes first, with the previous author and actor.
+    public var author: AuthorId? {
+        get {
+            lock {
+                self.doc.wrapErrors { $0.author() }.map(AuthorId.init(ffi:))
+            }
+        }
+        set {
+            lock {
+                self.doc.wrapErrors { $0.setAuthor(author: newValue.map { [UInt8]($0.data) }) }
+            }
+        }
+    }
+
+    /// The authors recorded in the document's changes, including those received from other peers.
+    ///
+    /// An author is listed once the first change of one of its actors is in the document. The current
+    /// ``author`` isn't listed until the document records a change with it.
+    public var authors: [AuthorId] {
+        lock {
+            self.doc.wrapErrors { $0.authors() }.map(AuthorId.init(ffi:))
+        }
+    }
+
+    /// Returns the author recorded for the actor you provide.
+    ///
+    /// - Parameter actor: The actor to look up.
+    /// - Returns: The author of the actor's changes, or `nil` if the actor's first change recorded none or
+    /// isn't in the document.
+    public func author(for actor: ActorId) -> AuthorId? {
+        lock {
+            self.doc.wrapErrors { $0.authorForActor(actor: [UInt8](actor.data)) }.map(AuthorId.init(ffi:))
+        }
+    }
+
+    /// Returns the actors whose changes record the author you provide.
+    ///
+    /// - Parameter author: The author to look up.
+    /// - Returns: The actors with that author, or an empty array if no change in the document records it.
+    public func actors(for author: AuthorId) -> [ActorId] {
+        lock {
+            self.doc.wrapErrors { $0.actorsForAuthor(author: [UInt8](author.data)) }.map(ActorId.init(ffi:))
+        }
+    }
+
     /// Retrieve the current text encoding used by the document.
     public var textEncoding: TextEncoding {
         lock {
@@ -1407,7 +1464,7 @@ public final class Document: @unchecked Sendable {
 
     /// Fork the document.
     ///
-    /// - Returns: A copy of the document with a new actor ID.
+    /// - Returns: A copy of the document with a new actor ID. The copy keeps this document's ``author``.
     public func fork() -> Document {
         lock {
             Document(doc: self.doc.wrapErrors { $0.fork() })
@@ -1418,7 +1475,7 @@ public final class Document: @unchecked Sendable {
     ///
     /// - Parameter heads: The set of ``ChangeHash`` that represents a point of time in the history the document.
     /// - Returns: A copy of the document with a new actor ID that contains the changes up to the point in time you
-    /// specify. The copy uses the same text encoding as this document.
+    /// specify. The copy uses the same text encoding as this document, and has no ``author`` until you set one.
     public func forkAt(heads: Set<ChangeHash>) throws -> Document {
         try lock {
             try self.doc.wrapErrors {

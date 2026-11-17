@@ -89,6 +89,37 @@ impl Doc {
         crate::lock::write(&self.0).set_actor(actor.into());
     }
 
+    pub fn author(&self) -> Option<Vec<u8>> {
+        let doc = crate::lock::read(&self.0);
+        doc.get_author().map(|author| author.as_bytes().to_vec())
+    }
+
+    pub fn set_author(&self, author: Option<Vec<u8>>) {
+        crate::lock::write(&self.0).set_author(author.map(am::Author::from));
+    }
+
+    pub fn authors(&self) -> Vec<Vec<u8>> {
+        let doc = crate::lock::read(&self.0);
+        doc.get_authors()
+            .iter()
+            .map(|author| author.as_bytes().to_vec())
+            .collect()
+    }
+
+    pub fn author_for_actor(&self, actor: ActorId) -> Option<Vec<u8>> {
+        let doc = crate::lock::read(&self.0);
+        doc.get_author_for_actor(&actor.into())
+            .map(|author| author.as_bytes().to_vec())
+    }
+
+    pub fn actors_for_author(&self, author: Vec<u8>) -> Vec<ActorId> {
+        let doc = crate::lock::read(&self.0);
+        doc.get_actors_for_author(&am::Author::from(author))
+            .iter()
+            .map(ActorId::from)
+            .collect()
+    }
+
     pub fn put_in_map(&self, obj: ObjId, key: String, value: ScalarValue) -> Result<(), DocError> {
         let obj = am::ObjId::from(obj);
         let mut doc = crate::lock::write(&self.0);

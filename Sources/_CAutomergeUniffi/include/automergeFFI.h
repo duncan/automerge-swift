@@ -346,12 +346,12 @@ void uniffi_uniffi_automerge_fn_method_doc_commit_with(uint64_t ptr, RustBuffer 
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_CURSOR
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_CURSOR
-RustBuffer uniffi_uniffi_automerge_fn_method_doc_cursor(uint64_t ptr, RustBuffer obj, uint64_t position, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_uniffi_automerge_fn_method_doc_cursor(uint64_t ptr, RustBuffer obj, uint64_t position, RustBuffer move_cursor, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_CURSOR_AT
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_CURSOR_AT
-RustBuffer uniffi_uniffi_automerge_fn_method_doc_cursor_at(uint64_t ptr, RustBuffer obj, uint64_t position, RustBuffer heads, RustCallStatus *_Nonnull out_status
+RustBuffer uniffi_uniffi_automerge_fn_method_doc_cursor_at(uint64_t ptr, RustBuffer obj, uint64_t position, RustBuffer heads, RustBuffer move_cursor, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_CURSOR_POSITION
@@ -674,9 +674,19 @@ RustBuffer uniffi_uniffi_automerge_fn_method_doc_text_at(uint64_t ptr, RustBuffe
 RustBuffer uniffi_uniffi_automerge_fn_method_doc_text_encoding(uint64_t ptr, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_UNMARK
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_UNMARK
+void uniffi_uniffi_automerge_fn_method_doc_unmark(uint64_t ptr, RustBuffer obj, uint64_t start, uint64_t end, RustBuffer expand, RustBuffer name, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_UPDATE_BLOCK
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_UPDATE_BLOCK
 RustBuffer uniffi_uniffi_automerge_fn_method_doc_update_block(uint64_t ptr, RustBuffer obj, uint64_t index, RustBuffer block, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_UPDATE_SPANS
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_UPDATE_SPANS
+void uniffi_uniffi_automerge_fn_method_doc_update_spans(uint64_t ptr, RustBuffer obj, RustBuffer spans, RustBuffer default_expand, RustBuffer per_mark_expands, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_UPDATE_TEXT
@@ -1481,9 +1491,21 @@ uint16_t uniffi_uniffi_automerge_checksum_method_doc_text_encoding(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_UNMARK
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_UNMARK
+uint16_t uniffi_uniffi_automerge_checksum_method_doc_unmark(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_UPDATE_BLOCK
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_UPDATE_BLOCK
 uint16_t uniffi_uniffi_automerge_checksum_method_doc_update_block(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_UPDATE_SPANS
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_UPDATE_SPANS
+uint16_t uniffi_uniffi_automerge_checksum_method_doc_update_spans(void
     
 );
 #endif

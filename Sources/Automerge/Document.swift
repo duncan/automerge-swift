@@ -786,7 +786,54 @@ public final class Document: @unchecked Sendable {
         try lock {
             sendObjectWillChange()
             defer { sendObjectDidChange() }
-            return try Cursor(bytes: self.doc.wrapErrors { try $0.cursor(obj: obj.bytes, position: position) })
+            return try Cursor(bytes: self.doc.wrapErrors {
+                try $0.cursor(obj: obj.bytes, position: position, moveCursor: .after)
+            })
+        }
+    }
+
+    /// Establish a cursor at the position you specify, choosing where it goes if its element is deleted.
+    ///
+    /// A cursor from ``cursor(obj:position:)`` moves to the next element when the one it refers to is
+    /// deleted. Use this method to choose the previous element instead, for example for the end of a
+    /// selection. See ``MoveCursor``.
+    ///
+    /// - Parameters:
+    ///   - obj: The object identifier of the list or text object.
+    ///   - position: The index position in the list, or index for a text object based on ``TextEncoding``.
+    ///     When you use a position equal to or greater than the current length of the object,
+    ///     the cursor tracks the end of the document, regardless of changes.
+    ///   - move: Where the cursor goes when the element it refers to is deleted.
+    /// - Returns: A cursor that references the position you specified.
+    public func cursor(obj: ObjId, position: UInt64, move: MoveCursor) throws -> Cursor {
+        try lock {
+            try Cursor(bytes: self.doc.wrapErrors {
+                try $0.cursor(obj: obj.bytes, position: position, moveCursor: move.toFfi())
+            })
+        }
+    }
+
+    /// Establish a cursor at the position and point of time you specify, choosing where it goes if its
+    /// element is deleted.
+    ///
+    /// - Parameters:
+    ///   - obj: The object identifier of the list or text object.
+    ///   - position: The index position in the list, or index for a text object based on ``TextEncoding``.
+    ///     When you use a position equal to or greater than the length of the object at that point in time,
+    ///     the cursor tracks the end of the document, regardless of changes.
+    ///   - heads: The set of ``ChangeHash`` that represents a point of time in the history the document.
+    ///   - move: Where the cursor goes when the element it refers to is deleted. See ``MoveCursor``.
+    /// - Returns: A cursor that references the position and point in time you specified.
+    public func cursor(obj: ObjId, position: UInt64, heads: Set<ChangeHash>, move: MoveCursor) throws -> Cursor {
+        try lock {
+            try Cursor(bytes: self.doc.wrapErrors {
+                try $0.cursorAt(
+                    obj: obj.bytes,
+                    position: position,
+                    heads: heads.map(\.bytes),
+                    moveCursor: move.toFfi()
+                )
+            })
         }
     }
 
@@ -828,7 +875,8 @@ public final class Document: @unchecked Sendable {
             return try Cursor(bytes: self.doc.wrapErrors { try $0.cursorAt(
                 obj: obj.bytes,
                 position: position,
-                heads: heads.map(\.bytes)
+                heads: heads.map(\.bytes),
+                moveCursor: .after
             ) })
         }
     }
@@ -1133,6 +1181,40 @@ public final class Document: @unchecked Sendable {
         }
     }
 
+    /// Removes a mark from a range of a text object.
+    ///
+    /// Use this to take formatting off text, such as removing bold from part of a bold range. It affects
+    /// only the mark with the name you provide, and only within the range. Unmarking a range that doesn't
+    /// have the mark does nothing.
+    ///
+    /// ```swift
+    /// try doc.mark(obj: text, start: 0, end: 10, expand: .after, name: "bold", value: .Boolean(true))
+    /// try doc.unmark(obj: text, start: 4, end: 10, expand: .none, name: "bold")
+    /// // "bold" now applies to 0..<4
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - obj: The identifier of the text object.
+    ///   - start: The index position where the range starts, in the units of the document's ``TextEncoding``.
+    ///   - end: The index position where the range ends.
+    ///   - expand: Whether characters added later at the edges of the range are also left without the mark.
+    ///   - name: The name of the mark to remove.
+    public func unmark(
+        obj: ObjId,
+        start: UInt64,
+        end: UInt64,
+        expand: ExpandMark,
+        name: String
+    ) throws {
+        try lock {
+            sendObjectWillChange()
+            defer { sendObjectDidChange() }
+            try self.doc.wrapErrors {
+                try $0.unmark(obj: obj.bytes, start: start, end: end, expand: expand.toFfi(), name: name)
+            }
+        }
+    }
+
     /// Returns the current list of marks for a text object.
     ///
     /// - Parameter obj: The identifier of the text object.
@@ -1387,6 +1469,46 @@ public final class Document: @unchecked Sendable {
             try self.doc.wrapErrors {
                 try $0.getBlockAt(obj: obj.bytes, index: index, heads: heads.map(\.bytes))?
                     .mapValues(AutomergeValue.fromFfi)
+            }
+        }
+    }
+
+    /// Updates a text object so its blocks, text, and marks match the spans you provide.
+    ///
+    /// This is ``updateText(obj:value:)`` for rich text. Automerge compares the spans with the object's
+    /// current contents and makes only the changes needed to get from one to the other, so concurrent
+    /// edits to the parts you didn't change merge cleanly. Use it when you have a whole new version of the
+    /// text, such as the contents of an editor, rather than a list of individual edits:
+    ///
+    /// ```swift
+    /// try doc.updateSpans(obj: text, spans: [
+    ///     .block(["type": .scalar(.String("paragraph"))]),
+    ///     .text("Hello, ", marks: [:]),
+    ///     .text("world", marks: ["bold": .Boolean(true)]),
+    /// ])
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - obj: The identifier of the text object.
+    ///   - spans: The new contents of the text object, in order. ``spans(obj:)`` returns the same form.
+    ///   - defaultExpand: How the marks this creates expand when characters are added at their edges.
+    ///   - expandByMark: How marks with particular names expand, in place of `defaultExpand`, by name.
+    public func updateSpans(
+        obj: ObjId,
+        spans: [Span],
+        defaultExpand: ExpandMark = .after,
+        expandByMark: [String: ExpandMark] = [:]
+    ) throws {
+        try lock {
+            sendObjectWillChange()
+            defer { sendObjectDidChange() }
+            try self.doc.wrapErrors {
+                try $0.updateSpans(
+                    obj: obj.bytes,
+                    spans: spans.map { $0.toFfi() },
+                    defaultExpand: defaultExpand.toFfi(),
+                    perMarkExpands: expandByMark.mapValues { $0.toFfi() }
+                )
             }
         }
     }

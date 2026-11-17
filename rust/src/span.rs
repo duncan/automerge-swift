@@ -78,6 +78,34 @@ impl From<am::iter::Span> for Span {
     }
 }
 
+impl Span {
+    /// Converts to the core's span, creating any text within a block with the document's encoding.
+    pub(crate) fn into_core(self, encoding: am::TextEncoding) -> am::iter::Span {
+        match self {
+            Span::Text { text, marks } => am::iter::Span::Text {
+                text,
+                marks: if marks.is_empty() {
+                    None
+                } else {
+                    Some(std::sync::Arc::new(
+                        marks
+                            .into_iter()
+                            .map(|(name, value)| (name, am::ScalarValue::from(value)))
+                            .collect::<am::marks::MarkSet>(),
+                    ))
+                },
+            },
+            Span::Block { value } => am::iter::Span::Block(
+                value
+                    .into_iter()
+                    .map(|(key, value)| (key, value.into_hydrate(encoding)))
+                    .collect::<HashMap<_, _>>()
+                    .into(),
+            ),
+        }
+    }
+}
+
 impl HydratedValue {
     /// Converts to the core's value, creating any text with the document's encoding.
     pub(crate) fn into_hydrate(self, encoding: am::TextEncoding) -> am::hydrate::Value {

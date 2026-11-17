@@ -18,6 +18,15 @@ public enum Span: Equatable, Hashable, Sendable {
     /// A block marker, and its contents.
     case block([String: AutomergeValue])
 
+    func toFfi() -> FfiSpan {
+        switch self {
+        case let .text(text, marks):
+            return .text(text: text, marks: marks.mapValues { $0.toFfi() })
+        case let .block(value):
+            return .block(value: value.mapValues { $0.toFfi() })
+        }
+    }
+
     static func fromFfi(_ span: FfiSpan) -> Self {
         switch span {
         case let .text(text, marks):

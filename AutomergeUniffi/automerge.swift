@@ -625,9 +625,9 @@ public protocol DocProtocol: AnyObject, Sendable {
     
     func commitWith(msg: String?, time: Int64) 
     
-    func cursor(obj: ObjId, position: UInt64) throws  -> Cursor
+    func cursor(obj: ObjId, position: UInt64, moveCursor: MoveCursor) throws  -> Cursor
     
-    func cursorAt(obj: ObjId, position: UInt64, heads: [ChangeHash]) throws  -> Cursor
+    func cursorAt(obj: ObjId, position: UInt64, heads: [ChangeHash], moveCursor: MoveCursor) throws  -> Cursor
     
     func cursorPosition(obj: ObjId, cursor: Cursor) throws  -> UInt64
     
@@ -757,7 +757,11 @@ public protocol DocProtocol: AnyObject, Sendable {
     
     func textEncoding()  -> TextEncoding
     
+    func unmark(obj: ObjId, start: UInt64, end: UInt64, expand: ExpandMark, name: String) throws 
+    
     func updateBlock(obj: ObjId, index: UInt64, block: [String: HydratedValue]) throws  -> ObjId
+    
+    func updateSpans(obj: ObjId, spans: [Span], defaultExpand: ExpandMark, perMarkExpands: [String: ExpandMark]) throws 
     
     func updateText(obj: ObjId, chars: String) throws 
     
@@ -989,25 +993,27 @@ open func commitWith(msg: String?, time: Int64)  {try! rustCall() {
 }
 }
     
-open func cursor(obj: ObjId, position: UInt64)throws  -> Cursor  {
+open func cursor(obj: ObjId, position: UInt64, moveCursor: MoveCursor)throws  -> Cursor  {
     return try  FfiConverterTypeCursor_lift(try rustCallWithError(FfiConverterTypeDocError_lift) {
         uniffiCallStatus in
     uniffi_uniffi_automerge_fn_method_doc_cursor(
             self.uniffiCloneHandle(),
         FfiConverterTypeObjId_lower(obj),
-        FfiConverterUInt64.lower(position),uniffiCallStatus
+        FfiConverterUInt64.lower(position),
+        FfiConverterTypeMoveCursor_lower(moveCursor),uniffiCallStatus
     )
 })
 }
     
-open func cursorAt(obj: ObjId, position: UInt64, heads: [ChangeHash])throws  -> Cursor  {
+open func cursorAt(obj: ObjId, position: UInt64, heads: [ChangeHash], moveCursor: MoveCursor)throws  -> Cursor  {
     return try  FfiConverterTypeCursor_lift(try rustCallWithError(FfiConverterTypeDocError_lift) {
         uniffiCallStatus in
     uniffi_uniffi_automerge_fn_method_doc_cursor_at(
             self.uniffiCloneHandle(),
         FfiConverterTypeObjId_lower(obj),
         FfiConverterUInt64.lower(position),
-        FfiConverterSequenceTypeChangeHash.lower(heads),uniffiCallStatus
+        FfiConverterSequenceTypeChangeHash.lower(heads),
+        FfiConverterTypeMoveCursor_lower(moveCursor),uniffiCallStatus
     )
 })
 }
@@ -1701,6 +1707,19 @@ open func textEncoding() -> TextEncoding  {
 })
 }
     
+open func unmark(obj: ObjId, start: UInt64, end: UInt64, expand: ExpandMark, name: String)throws   {try rustCallWithError(FfiConverterTypeDocError_lift) {
+        uniffiCallStatus in
+    uniffi_uniffi_automerge_fn_method_doc_unmark(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeObjId_lower(obj),
+        FfiConverterUInt64.lower(start),
+        FfiConverterUInt64.lower(end),
+        FfiConverterTypeExpandMark_lower(expand),
+        FfiConverterString.lower(name),uniffiCallStatus
+    )
+}
+}
+    
 open func updateBlock(obj: ObjId, index: UInt64, block: [String: HydratedValue])throws  -> ObjId  {
     return try  FfiConverterTypeObjId_lift(try rustCallWithError(FfiConverterTypeDocError_lift) {
         uniffiCallStatus in
@@ -1711,6 +1730,18 @@ open func updateBlock(obj: ObjId, index: UInt64, block: [String: HydratedValue])
         FfiConverterDictionaryStringTypeHydratedValue.lower(block),uniffiCallStatus
     )
 })
+}
+    
+open func updateSpans(obj: ObjId, spans: [Span], defaultExpand: ExpandMark, perMarkExpands: [String: ExpandMark])throws   {try rustCallWithError(FfiConverterTypeDocError_lift) {
+        uniffiCallStatus in
+    uniffi_uniffi_automerge_fn_method_doc_update_spans(
+            self.uniffiCloneHandle(),
+        FfiConverterTypeObjId_lower(obj),
+        FfiConverterSequenceTypeSpan.lower(spans),
+        FfiConverterTypeExpandMark_lower(defaultExpand),
+        FfiConverterDictionaryStringTypeExpandMark.lower(perMarkExpands),uniffiCallStatus
+    )
+}
 }
     
 open func updateText(obj: ObjId, chars: String)throws   {try rustCallWithError(FfiConverterTypeDocError_lift) {
@@ -2863,6 +2894,72 @@ public func FfiConverterTypeLoadError_lift(_ buf: RustBuffer) throws -> LoadErro
 public func FfiConverterTypeLoadError_lower(_ value: LoadError) -> RustBuffer {
     return FfiConverterTypeLoadError.lower(value)
 }
+
+
+
+public enum MoveCursor: Equatable, Hashable {
+    
+    case before
+    case after
+
+
+
+
+
+}
+
+#if compiler(>=6)
+extension MoveCursor: Sendable {}
+#endif
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public struct FfiConverterTypeMoveCursor: FfiConverterRustBuffer {
+    typealias SwiftType = MoveCursor
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> MoveCursor {
+        let variant: Int32 = try readInt(&buf)
+        switch variant {
+        
+        case 1: return .before
+        
+        case 2: return .after
+        
+        default: throw UniffiInternalError.unexpectedEnumCase
+        }
+    }
+
+    public static func write(_ value: MoveCursor, into buf: inout [UInt8]) {
+        switch value {
+        
+        
+        case .before:
+            writeInt(&buf, Int32(1))
+        
+        
+        case .after:
+            writeInt(&buf, Int32(2))
+        
+        }
+    }
+}
+
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeMoveCursor_lift(_ buf: RustBuffer) throws -> MoveCursor {
+    return try FfiConverterTypeMoveCursor.lift(buf)
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
+public func FfiConverterTypeMoveCursor_lower(_ value: MoveCursor) -> RustBuffer {
+    return FfiConverterTypeMoveCursor.lower(value)
+}
+
 
 
 
@@ -4256,6 +4353,32 @@ fileprivate struct FfiConverterSequenceTypeChangeHash: FfiConverterRustBuffer {
 #if swift(>=5.8)
 @_documentation(visibility: private)
 #endif
+fileprivate struct FfiConverterDictionaryStringTypeExpandMark: FfiConverterRustBuffer {
+    public static func write(_ value: [String: ExpandMark], into buf: inout [UInt8]) {
+        let len = Int32(value.count)
+        writeInt(&buf, len)
+        for (key, value) in value {
+            FfiConverterString.write(key, into: &buf)
+            FfiConverterTypeExpandMark.write(value, into: &buf)
+        }
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String: ExpandMark] {
+        let len: Int32 = try readInt(&buf)
+        var dict = [String: ExpandMark]()
+        dict.reserveCapacity(Int(len))
+        for _ in 0..<len {
+            let key = try FfiConverterString.read(from: &buf)
+            let value = try FfiConverterTypeExpandMark.read(from: &buf)
+            dict[key] = value
+        }
+        return dict
+    }
+}
+
+#if swift(>=5.8)
+@_documentation(visibility: private)
+#endif
 fileprivate struct FfiConverterDictionaryStringTypeHydratedValue: FfiConverterRustBuffer {
     public static func write(_ value: [String: HydratedValue], into buf: inout [UInt8]) {
         let len = Int32(value.count)
@@ -4563,10 +4686,10 @@ private let initializationResult: InitializationResult = {
     if (uniffi_uniffi_automerge_checksum_method_doc_commit_with() != 64670) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_uniffi_automerge_checksum_method_doc_cursor() != 15363) {
+    if (uniffi_uniffi_automerge_checksum_method_doc_cursor() != 12577) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_uniffi_automerge_checksum_method_doc_cursor_at() != 26989) {
+    if (uniffi_uniffi_automerge_checksum_method_doc_cursor_at() != 43763) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_method_doc_cursor_position() != 43714) {
@@ -4761,7 +4884,13 @@ private let initializationResult: InitializationResult = {
     if (uniffi_uniffi_automerge_checksum_method_doc_text_encoding() != 30943) {
         return InitializationResult.apiChecksumMismatch
     }
+    if (uniffi_uniffi_automerge_checksum_method_doc_unmark() != 3635) {
+        return InitializationResult.apiChecksumMismatch
+    }
     if (uniffi_uniffi_automerge_checksum_method_doc_update_block() != 40781) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_uniffi_automerge_checksum_method_doc_update_spans() != 57187) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_uniffi_automerge_checksum_method_doc_update_text() != 24572) {

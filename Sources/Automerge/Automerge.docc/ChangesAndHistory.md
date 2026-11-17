@@ -16,7 +16,39 @@ Use ``Document/heads()`` to obtain the current heads of the document, which retu
 The set of `ChangeHash` that Automerge returns represent a discrete point in time for an Automerge document.
 `Document` includes families of methods that accept `[ChangeHash]` to retrieve values or objects from that point in time.
 
-Unlike git, Automerge does not track additional metadata about the changes over time, such as who contributed any change, or at what time the change was initially created. 
+Each ``Change`` carries the time it was made, an optional message, and the actor that made it.
+To also record who made a change, give the document an author.
+
+### Authors and actors
+
+An ``ActorId`` identifies one copy of a document. Automerge creates it for you, and every change records it.
+An ``AuthorId`` identifies who is making changes: a person, an app, or whatever else your app attributes changes to.
+One author usually has several actors, for example one for each device they edit on.
+
+Provide the author when you create or load a document, then look it up for any change:
+
+```swift
+let doc = try Document(savedData, author: AuthorId(uuid: currentUser.id))
+try doc.put(obj: ObjId.ROOT, key: "title", value: .String("Hello"))
+
+for hash in doc.getHistory() {
+    if let change = doc.change(hash: hash), let author = doc.author(of: change) {
+        print("\(author) made a change at \(change.timestamp)")
+    }
+}
+```
+
+The author isn't saved with the document, because the same data can be loaded by different people. Provide it each time you load.
+Author IDs are permanent and sent to every peer, so use an opaque identifier such as a UUID rather than a name or an email address.
+
+A few rules explain the rest of the API:
+
+- **An actor has one author.** Automerge stores the author in the actor's first change, and it applies to all the actor's changes. That is why ``Change/recordedAuthor`` is `nil` for most changes, and why you look up authors with ``Document/author(of:)`` or ``Document/author(for:)``.
+- **Changing the author changes the actor.** ``Document/setAuthor(_:)`` gives the document a new, random actor, after saving any changes in progress under the previous author.
+- **Let the document choose its actors.** If you set ``Document/actor`` to one that has already made changes, those changes keep the author they started with, and Automerge reports no error. ``Document/author`` then tells you the author you asked for, while ``Document/author(for:)`` tells you the one that was recorded.
+- **Lookups see finished changes.** ``Document/authors``, ``Document/author(for:)``, and ``Document/actors(for:)`` include a change once the document has saved or synced it, or you've called ``Document/heads()`` or ``Document/commitWith(message:timestamp:)``. Edits still in progress aren't included.
+
+Both ``Document/fork()`` and ``Document/forkAt(heads:)`` keep the document's author.
 
 ### Forking and Merging
 

@@ -4,9 +4,9 @@
 
 ### Creating or loading a document
 
-- ``init(textEncoding:logLevel:)``
-- ``init(_:logLevel:)``
-- ``init(_:textEncoding:logLevel:)``
+- ``init(textEncoding:author:logLevel:)``
+- ``init(_:author:logLevel:)``
+- ``init(_:textEncoding:author:logLevel:)``
 - ``init(rescuing:textEncoding:logLevel:)``
 - ``LogVerbosity``
 
@@ -20,9 +20,11 @@
 
 ### Attributing changes to authors
 
-- ``author``
 - ``AuthorId``
+- ``author``
+- ``setAuthor(_:)``
 - ``authors``
+- ``author(of:)``
 - ``author(for:)``
 - ``actors(for:)``
 

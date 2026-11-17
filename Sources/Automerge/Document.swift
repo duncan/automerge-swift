@@ -69,77 +69,83 @@ public final class Document: @unchecked Sendable {
         }
     }
 
-    /// The author of the changes this document makes, if it has one.
+    /// The author this document attributes its changes to, if any.
     ///
-    /// Automerge records the author with the first change that the document's current actor makes, so
-    /// every peer that receives that change can read it with ``author(for:)`` or ``Change/author``. An actor
-    /// has at most one author, fixed by its first change. Changes an actor makes before you set an author
-    /// stay without one.
+    /// Provide an author when you create or load a document, or change it with ``setAuthor(_:)``. The
+    /// author isn't saved with the document, so a document you load has none until you provide one.
     ///
-    /// The author isn't saved with the document. A new or loaded document has no author, so set it each
-    /// time you create or load one, before its first change.
-    ///
-    /// Setting an author that differs from the current one, including `nil`, gives the document a new,
-    /// random ``actor``, so the new author's changes start with a fresh actor. Setting the same author again
-    /// changes nothing. Setting the author commits any pending changes first, with the previous author and
-    /// actor.
-    ///
-    /// > Important: When you use authors, let the document choose its actors. If you set ``actor``
-    /// yourself, set it after the author, and only to an actor that has never made a change in this or any
-    /// other copy of the document, or whose first change recorded this same author. Automerge records
-    /// nothing for an actor that has already made a change, and reports no error, so its later changes keep
-    /// its earlier author, or none, even though this property returns the new one. Check ``author(for:)``
-    /// with the actor to see the author its changes record.
-    ///
-    /// Author IDs are permanent: they're stored with the document's history and sent to every peer that
-    /// receives it. Don't put personal information, such as an email address, in an author ID. Use an
-    /// opaque identifier that your app maps to the person or app it stands for.
+    /// This is the author you asked for. To see the author that changes actually recorded, use
+    /// ``author(of:)`` or ``author(for:)``.
     public var author: AuthorId? {
-        get {
-            lock {
-                self.doc.wrapErrors { $0.author() }.map(AuthorId.init(ffi:))
-            }
-        }
-        set {
-            lock {
-                self.doc.wrapErrors { $0.setAuthor(author: newValue.map { [UInt8]($0.data) }) }
-            }
+        lock {
+            self.doc.wrapErrors { $0.author() }.map(AuthorId.init(ffi:))
         }
     }
 
-    /// The authors recorded in the document's changes, including those received from other peers, sorted by
-    /// their bytes.
+    /// Sets the author this document attributes its changes to.
     ///
-    /// This reads committed changes. An author is listed once the first change of one of its actors is
-    /// committed, so the current ``author`` appears after the document commits a change with it, for
-    /// example with ``commitWith(message:timestamp:)``, ``save()``, or ``heads()``, and not while that change
-    /// is still pending.
+    /// ```swift
+    /// let doc = try Document(savedData)
+    /// doc.setAuthor(AuthorId(uuid: currentUser.id))
+    /// ```
+    ///
+    /// Changing the author does more than store a value:
+    ///
+    /// - It saves any changes made so far under the previous author.
+    /// - It gives the document a new, random ``actor``, because an actor has one author for all its changes.
+    ///
+    /// Setting the author the document already has does nothing. Pass `nil` to stop attributing changes.
+    ///
+    /// > Important: Set the author first, and let the document choose its ``actor``. If you assign an actor
+    /// that has already made changes, those changes keep the author they started with.
+    ///
+    /// For more, see <doc:ChangesAndHistory#Authors-and-actors>.
+    ///
+    /// - Parameter author: The author of the changes the document makes from now on, or `nil` for none.
+    public func setAuthor(_ author: AuthorId?) {
+        lock {
+            self.doc.wrapErrors { $0.setAuthor(author: author.map { [UInt8]($0.data) }) }
+        }
+    }
+
+    /// The authors of the changes in the document, including changes from other peers, sorted by their bytes.
+    ///
+    /// An author appears once the document has saved or synced a change it made. A change that is still
+    /// in progress isn't included.
     public var authors: [AuthorId] {
         lock {
             self.doc.wrapErrors { $0.authors() }.map(AuthorId.init(ffi:))
         }
     }
 
-    /// Returns the author recorded for the actor you provide.
+    /// Returns the author of the change you provide.
+    ///
+    /// Use this rather than ``Change/recordedAuthor``, which is set only on the first change each actor makes.
+    ///
+    /// - Parameter change: A change from this document.
+    /// - Returns: The author of the change, or `nil` if it has none.
+    public func author(of change: Change) -> AuthorId? {
+        author(for: change.actorId)
+    }
+
+    /// Returns the author of the changes made by the actor you provide.
     ///
     /// - Parameter actor: The actor to look up.
-    /// - Returns: The author of the actor's changes, or `nil` if the actor's first change recorded none or
-    /// hasn't been committed.
-    ///
-    /// Like ``authors``, this reads committed changes.
+    /// - Returns: The author of the actor's changes, or `nil` if they have none, or if the document hasn't
+    /// yet saved or synced a change by the actor.
     public func author(for actor: ActorId) -> AuthorId? {
         lock {
             self.doc.wrapErrors { $0.authorForActor(actor: [UInt8](actor.data)) }.map(AuthorId.init(ffi:))
         }
     }
 
-    /// Returns the actors whose changes record the author you provide.
+    /// Returns the actors that made changes for the author you provide.
+    ///
+    /// An author has one actor for each copy of the document they changed, such as one for each device.
     ///
     /// - Parameter author: The author to look up.
-    /// - Returns: The actors with that author, or an empty array if no committed change in the document
-    /// records it.
-    ///
-    /// Like ``authors``, this reads committed changes.
+    /// - Returns: The author's actors, or an empty array if no saved or synced change in the document is
+    /// theirs.
     public func actors(for author: AuthorId) -> [ActorId] {
         lock {
             self.doc.wrapErrors { $0.actorsForAuthor(author: [UInt8](author.data)) }.map(ActorId.init(ffi:))
@@ -156,10 +162,16 @@ public final class Document: @unchecked Sendable {
     /// Creates an new, empty Automerge document.
     /// - Parameters:
     ///   - textEncoding: The encoding type for text within the document. Defaults to ``TextEncoding/unicodeScalar``.
+    ///   - author: The author to attribute this document's changes to. See ``setAuthor(_:)``.
     ///   - logLevel: The level at which to generate logs into unified logging from actions within this document.
-    public init(textEncoding: TextEncoding = .unicodeScalar, logLevel: LogVerbosity = .errorOnly) {
+    public init(
+        textEncoding: TextEncoding = .unicodeScalar,
+        author: AuthorId? = nil,
+        logLevel: LogVerbosity = .errorOnly
+    ) {
         doc = WrappedDoc(Doc.newWithTextEncoding(textEncoding: textEncoding.ffi_textEncoding))
         self.reportingLogLevel = logLevel
+        if let author { setAuthor(author) }
     }
 
     /// Creates a new document from the data that you provide.
@@ -172,13 +184,16 @@ public final class Document: @unchecked Sendable {
     ///
     /// The document uses the default text encoding, ``TextEncoding/unicodeScalar``, because the data doesn't record
     /// the encoding a document was created with. To load a document with another encoding, use
-    /// ``init(_:textEncoding:logLevel:)``.
+    /// ``init(_:textEncoding:author:logLevel:)``.
     /// - Parameters:
     ///   - bytes: A data buffer of encoded automerge changes.
+    ///   - author: The author to attribute this document's changes to. It isn't stored in the data, so provide
+    ///   it each time you load the document. See ``setAuthor(_:)``.
     ///   - logLevel: The level at which to generate logs into unified logging from actions within this document.
-    public init(_ bytes: Data, logLevel: LogVerbosity = .errorOnly) throws {
+    public init(_ bytes: Data, author: AuthorId? = nil, logLevel: LogVerbosity = .errorOnly) throws {
         doc = try WrappedDoc { try Doc.load(bytes: Array(bytes)) }
         self.reportingLogLevel = logLevel
+        if let author { setAuthor(author) }
     }
 
     /// Creates a new document from the data that you provide, using the text encoding you choose.
@@ -191,15 +206,23 @@ public final class Document: @unchecked Sendable {
     /// - Parameters:
     ///   - bytes: A data buffer of encoded automerge changes.
     ///   - textEncoding: The encoding type for text within the document.
+    ///   - author: The author to attribute this document's changes to. It isn't stored in the data, so provide
+    ///   it each time you load the document. See ``setAuthor(_:)``.
     ///   - logLevel: The level at which to generate logs into unified logging from actions within this document.
-    public init(_ bytes: Data, textEncoding: TextEncoding, logLevel: LogVerbosity = .errorOnly) throws {
+    public init(
+        _ bytes: Data,
+        textEncoding: TextEncoding,
+        author: AuthorId? = nil,
+        logLevel: LogVerbosity = .errorOnly
+    ) throws {
         doc = try WrappedDoc {
             try Doc.loadWithTextEncoding(bytes: Array(bytes), textEncoding: textEncoding.ffi_textEncoding)
         }
         self.reportingLogLevel = logLevel
+        if let author { setAuthor(author) }
     }
 
-    /// Recovers the current contents of a document that ``init(_:logLevel:)`` can't load.
+    /// Recovers the current contents of a document that ``init(_:author:logLevel:)`` can't load.
     ///
     /// Use this only after loading a document fails. It recovers what it can from data that
     /// automerge rejects when loading, such as a document containing a mark that older versions of
@@ -1495,12 +1518,15 @@ public final class Document: @unchecked Sendable {
     ///
     /// - Parameter heads: The set of ``ChangeHash`` that represents a point of time in the history the document.
     /// - Returns: A copy of the document with a new actor ID that contains the changes up to the point in time you
-    /// specify. The copy uses the same text encoding as this document, and has no ``author`` until you set one.
+    /// specify. The copy uses the same text encoding as this document, and keeps this document's ``author``.
     public func forkAt(heads: Set<ChangeHash>) throws -> Document {
         try lock {
-            try self.doc.wrapErrors {
+            let copy = try self.doc.wrapErrors {
                 try Document(doc: $0.forkAt(heads: heads.map(\.bytes)))
             }
+            // automerge's fork_at, unlike fork, doesn't carry the author over.
+            copy.setAuthor(author)
+            return copy
         }
     }
 

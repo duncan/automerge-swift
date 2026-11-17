@@ -24,19 +24,19 @@ class AuthorsTestCase: XCTestCase {
         let doc = Document()
         XCTAssertNil(doc.author)
         let change = try makeChange(doc)
-        XCTAssertNil(change.author)
+        XCTAssertNil(change.recordedAuthor)
         XCTAssertNil(doc.author(for: doc.actor))
         XCTAssertEqual(doc.authors, [])
     }
 
     func testTheFirstChangeRecordsTheAuthor() throws {
         let doc = Document()
-        doc.author = alice
+        doc.setAuthor(alice)
         XCTAssertEqual(doc.author, alice)
         XCTAssertEqual(doc.authors, [], "The author isn't recorded until a change is")
 
         let change = try makeChange(doc)
-        XCTAssertEqual(change.author, alice)
+        XCTAssertEqual(change.recordedAuthor, alice)
         XCTAssertEqual(change.actorId, doc.actor)
         XCTAssertEqual(doc.author(for: doc.actor), alice)
         XCTAssertEqual(doc.authors, [alice])
@@ -46,7 +46,7 @@ class AuthorsTestCase: XCTestCase {
 
     func testLookupsReadOnlyCommittedChanges() throws {
         let doc = Document()
-        doc.author = alice
+        doc.setAuthor(alice)
         try doc.put(obj: ObjId.ROOT, key: "key", value: .String("value"))
 
         XCTAssertEqual(doc.authors, [], "A pending change isn't listed")
@@ -62,35 +62,35 @@ class AuthorsTestCase: XCTestCase {
         let change = try XCTUnwrap(doc.change(hash: XCTUnwrap(doc.heads().first)))
         XCTAssertEqual(change.message, "first", "Looking up authors leaves the pending change to commitWith")
         XCTAssertEqual(change.timestamp, timestamp)
-        XCTAssertEqual(change.author, alice)
+        XCTAssertEqual(change.recordedAuthor, alice)
     }
 
     func testOnlyAnActorsFirstChangeCarriesTheAuthor() throws {
         let doc = Document()
-        doc.author = alice
+        doc.setAuthor(alice)
         let first = try makeChange(doc, value: "one")
         let second = try makeChange(doc, value: "two")
 
-        XCTAssertEqual(first.author, alice)
-        XCTAssertNil(second.author)
+        XCTAssertEqual(first.recordedAuthor, alice)
+        XCTAssertNil(second.recordedAuthor)
         XCTAssertEqual(doc.author(for: second.actorId), alice, "The actor's author covers all its changes")
     }
 
     func testSettingADifferentAuthorGivesTheDocumentANewActor() throws {
         let doc = Document()
         let original = doc.actor
-        doc.author = alice
+        doc.setAuthor(alice)
         let alicesActor = doc.actor
         XCTAssertNotEqual(alicesActor, original)
 
-        doc.author = alice
+        doc.setAuthor(alice)
         XCTAssertEqual(doc.actor, alicesActor, "Setting the same author keeps the actor")
 
-        doc.author = bob
+        doc.setAuthor(bob)
         let bobsActor = doc.actor
         XCTAssertNotEqual(bobsActor, alicesActor)
 
-        doc.author = nil
+        doc.setAuthor(nil)
         XCTAssertNil(doc.author)
         XCTAssertNotEqual(doc.actor, bobsActor, "Removing the author also gives a new actor")
     }
@@ -98,13 +98,13 @@ class AuthorsTestCase: XCTestCase {
     func testSettingTheAuthorAndThenTheActorKeepsTheChosenActor() throws {
         let chosen = ActorId()
         let doc = Document()
-        doc.author = alice
+        doc.setAuthor(alice)
         doc.actor = chosen
 
         let change = try makeChange(doc)
         XCTAssertEqual(doc.actor, chosen)
         XCTAssertEqual(change.actorId, chosen)
-        XCTAssertEqual(change.author, alice)
+        XCTAssertEqual(change.recordedAuthor, alice)
         XCTAssertEqual(doc.author(for: chosen), alice)
     }
 
@@ -112,11 +112,11 @@ class AuthorsTestCase: XCTestCase {
         let chosen = ActorId()
         let doc = Document()
         doc.actor = chosen
-        doc.author = alice
+        doc.setAuthor(alice)
 
         let change = try makeChange(doc)
         XCTAssertNotEqual(change.actorId, chosen)
-        XCTAssertEqual(change.author, alice)
+        XCTAssertEqual(change.recordedAuthor, alice)
     }
 
     func testAnActorThatHasMadeAChangeKeepsNoAuthor() throws {
@@ -125,29 +125,29 @@ class AuthorsTestCase: XCTestCase {
         doc.actor = chosen
         _ = try makeChange(doc, value: "one")
 
-        doc.author = alice
+        doc.setAuthor(alice)
         doc.actor = chosen
         let change = try makeChange(doc, value: "two")
 
         XCTAssertEqual(change.actorId, chosen)
-        XCTAssertNil(change.author, "Only an actor's first change records an author")
+        XCTAssertNil(change.recordedAuthor, "Only an actor's first change records an author")
         XCTAssertNil(doc.author(for: chosen))
     }
 
     func testAReusedActorKeepsItsEarlierAuthor() throws {
         let reused = ActorId()
         let doc = Document()
-        doc.author = alice
+        doc.setAuthor(alice)
         doc.actor = reused
         _ = try makeChange(doc, value: "alice")
 
         let loaded = try Document(doc.save())
-        loaded.author = bob
+        loaded.setAuthor(bob)
         loaded.actor = reused
         let change = try makeChange(loaded, value: "bob")
 
         XCTAssertEqual(loaded.author, bob, "The document reports the author it was given")
-        XCTAssertNil(change.author)
+        XCTAssertNil(change.recordedAuthor)
         XCTAssertEqual(loaded.author(for: reused), alice, "but the actor's changes keep its first author")
         XCTAssertEqual(loaded.authors, [alice])
     }
@@ -155,12 +155,12 @@ class AuthorsTestCase: XCTestCase {
     func testAnActorCanBeReusedWithTheSameAuthor() throws {
         let reused = ActorId()
         let doc = Document()
-        doc.author = alice
+        doc.setAuthor(alice)
         doc.actor = reused
         _ = try makeChange(doc, value: "one")
 
         let loaded = try Document(doc.save())
-        loaded.author = alice
+        loaded.setAuthor(alice)
         loaded.actor = reused
         _ = try makeChange(loaded, value: "two")
 
@@ -174,7 +174,7 @@ class AuthorsTestCase: XCTestCase {
         let doc = Document()
         let original = doc.actor
         try doc.put(obj: ObjId.ROOT, key: "key", value: .String("before"))
-        doc.author = alice
+        doc.setAuthor(alice)
         _ = try makeChange(doc, value: "after")
 
         let actors = doc.getHistory().compactMap { doc.change(hash: $0)?.actorId }
@@ -188,12 +188,12 @@ class AuthorsTestCase: XCTestCase {
         // change can record one.
         let empty = AuthorId(ffi: [])
         let peer = Document()
-        peer.author = empty
+        peer.setAuthor(empty)
         _ = try makeChange(peer)
 
         let doc = try Document(peer.save())
         let change = try XCTUnwrap(doc.change(hash: XCTUnwrap(doc.heads().first)))
-        XCTAssertEqual(change.author?.data, Data())
+        XCTAssertEqual(change.recordedAuthor?.data, Data())
         XCTAssertEqual(doc.authors, [empty])
         XCTAssertEqual(doc.author(for: peer.actor), empty)
         XCTAssertEqual(doc.actors(for: empty), [peer.actor])
@@ -202,9 +202,9 @@ class AuthorsTestCase: XCTestCase {
 
     func testAuthorsAreSortedByTheirBytes() throws {
         let doc = Document()
-        doc.author = zed
+        doc.setAuthor(zed)
         _ = try makeChange(doc, value: "zed")
-        doc.author = alice
+        doc.setAuthor(alice)
         _ = try makeChange(doc, value: "alice")
 
         XCTAssertEqual(doc.authors, [alice, zed])
@@ -212,11 +212,11 @@ class AuthorsTestCase: XCTestCase {
 
     func testAuthorsSurviveSavingAndLoading() throws {
         let doc = Document()
-        doc.author = zed
+        doc.setAuthor(zed)
         _ = try makeChange(doc, value: "one")
         _ = try makeChange(doc, value: "two")
         let zedsActor = doc.actor
-        doc.author = alice
+        doc.setAuthor(alice)
         _ = try makeChange(doc, value: "three")
         let alicesActor = doc.actor
 
@@ -228,13 +228,13 @@ class AuthorsTestCase: XCTestCase {
         XCTAssertEqual(loaded.author(for: alicesActor), alice)
         XCTAssertEqual(loaded.actors(for: zed), [zedsActor])
 
-        let authors = loaded.getHistory().map { loaded.change(hash: $0)?.author }
+        let authors = loaded.getHistory().map { loaded.change(hash: $0)?.recordedAuthor }
         XCTAssertEqual(authors, [zed, nil, alice])
     }
 
     func testAuthorsSurviveIncrementalChanges() throws {
         let doc = Document()
-        doc.author = alice
+        doc.setAuthor(alice)
         _ = try makeChange(doc)
 
         let other = Document()
@@ -245,11 +245,11 @@ class AuthorsTestCase: XCTestCase {
 
     func testAuthorsCarryAcrossAMerge() throws {
         let doc = Document()
-        doc.author = zed
+        doc.setAuthor(zed)
         _ = try makeChange(doc, key: "a")
 
         let copy = doc.fork()
-        copy.author = alice
+        copy.setAuthor(alice)
         _ = try makeChange(copy, key: "b")
 
         try doc.merge(other: copy)
@@ -260,7 +260,7 @@ class AuthorsTestCase: XCTestCase {
 
     func testAuthorsCarryAcrossSync() throws {
         let doc = Document()
-        doc.author = alice
+        doc.setAuthor(alice)
         _ = try makeChange(doc)
 
         let peer = Document()
@@ -286,20 +286,20 @@ class AuthorsTestCase: XCTestCase {
 
     func testAForkKeepsTheAuthorWithItsOwnActor() throws {
         let doc = Document()
-        doc.author = alice
+        doc.setAuthor(alice)
         _ = try makeChange(doc)
 
         let copy = doc.fork()
         XCTAssertNotEqual(copy.actor, doc.actor)
         XCTAssertEqual(copy.author, alice)
         let change = try makeChange(copy, key: "other")
-        XCTAssertEqual(change.author, alice)
+        XCTAssertEqual(change.recordedAuthor, alice)
         XCTAssertEqual(Set(copy.actors(for: alice)), [doc.actor, copy.actor])
     }
 
-    func testAForkAtEarlierHeadsHasNoAuthorUntilOneIsSet() throws {
+    func testAForkAtEarlierHeadsKeepsTheAuthor() throws {
         let doc = Document()
-        doc.author = alice
+        doc.setAuthor(alice)
         _ = try makeChange(doc, value: "one")
         let earlier = doc.heads()
         _ = try makeChange(doc, value: "two")
@@ -307,25 +307,80 @@ class AuthorsTestCase: XCTestCase {
         let copy = try doc.forkAt(heads: earlier)
         XCTAssertEqual(copy.heads(), earlier)
         XCTAssertNotEqual(copy.actor, doc.actor)
-        XCTAssertNil(copy.author)
+        XCTAssertEqual(copy.author, alice)
         XCTAssertEqual(copy.authors, [alice], "The copy keeps the authors its changes record")
         let change = try makeChange(copy, key: "other")
-        XCTAssertNil(change.author)
+        XCTAssertEqual(change.recordedAuthor, alice)
+        XCTAssertEqual(Set(copy.actors(for: alice)), [doc.actor, copy.actor])
+    }
 
-        copy.author = bob
-        let attributed = try makeChange(copy, key: "another")
-        XCTAssertEqual(attributed.author, bob)
+    func testAForkAtOfADocumentWithNoAuthorHasNone() throws {
+        let doc = Document()
+        _ = try makeChange(doc)
+        let copy = try doc.forkAt(heads: doc.heads())
+        XCTAssertNil(copy.author)
+        XCTAssertNil(try makeChange(copy, key: "other").recordedAuthor)
+    }
+
+    func testAnAuthorIdFromAUUIDHoldsItsBytes() {
+        let uuid = UUID()
+        let author = AuthorId(uuid: uuid)
+        XCTAssertEqual(author.data, withUnsafeBytes(of: uuid.uuid) { Data($0) })
+        XCTAssertEqual(author, AuthorId(uuid: uuid))
+    }
+
+    func testAnAuthorIdCantBeLongerThanTheMaximum() {
+        XCTAssertNotNil(AuthorId(data: Data(repeating: 1, count: AuthorId.maximumByteCount)))
+        XCTAssertNil(AuthorId(data: Data(repeating: 1, count: AuthorId.maximumByteCount + 1)))
+    }
+
+    func testANewDocumentTakesAnAuthor() throws {
+        let doc = Document(author: alice)
+        XCTAssertEqual(doc.author, alice)
+        XCTAssertEqual(try makeChange(doc).recordedAuthor, alice)
+    }
+
+    func testALoadedDocumentTakesAnAuthor() throws {
+        let original = Document(author: alice)
+        _ = try makeChange(original)
+        let saved = original.save()
+
+        let loaded = try Document(saved, author: bob)
+        XCTAssertEqual(loaded.author, bob)
+        XCTAssertNotEqual(loaded.actor, original.actor)
+        _ = try makeChange(loaded, key: "other")
+        XCTAssertEqual(loaded.authors, [alice, bob])
+
+        let encoded = try Document(saved, textEncoding: .utf16, author: bob)
+        XCTAssertEqual(encoded.author, bob)
+        XCTAssertNil(try Document(saved).author)
+    }
+
+    func testTheAuthorOfAChangeCoversEveryChangeOfItsActor() throws {
+        // Mirrors the example in the AuthorId documentation, which reads the history without calling heads().
+        let doc = Document(author: alice)
+        try doc.put(obj: ObjId.ROOT, key: "one", value: .String("one"))
+        doc.commitWith(message: nil)
+        try doc.put(obj: ObjId.ROOT, key: "two", value: .String("two"))
+
+        let changes = doc.getHistory().compactMap { doc.change(hash: $0) }
+        XCTAssertEqual(changes.count, 2)
+        XCTAssertEqual(changes.map(\.recordedAuthor), [alice, nil])
+        XCTAssertEqual(changes.map { doc.author(of: $0) }, [alice, alice])
+
+        let unattributed = Document()
+        XCTAssertNil(unattributed.author(of: try makeChange(unattributed)))
     }
 
     func testTwoFirstChangesForOneActorDontMerge() throws {
         let shared = ActorId()
         let first = Document()
-        first.author = alice
+        first.setAuthor(alice)
         first.actor = shared
         _ = try makeChange(first, value: "alice")
 
         let second = Document()
-        second.author = bob
+        second.setAuthor(bob)
         second.actor = shared
         _ = try makeChange(second, value: "bob")
 

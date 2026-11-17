@@ -83,7 +83,7 @@ These bytes represent the entire document model stored in `Document` and its his
 
 ### Forking and Merging Documents
 
-Use ``Document/init(_:logLevel:)`` to load the bytes of an Automerge document, to create a copy of the document:
+Use ``Document/init(_:author:logLevel:)`` to load the bytes of an Automerge document, to create a copy of the document:
 
 ```swift
 let doc2 = try Document(bytesToStore)

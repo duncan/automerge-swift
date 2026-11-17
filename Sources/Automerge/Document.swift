@@ -76,17 +76,20 @@ public final class Document: @unchecked Sendable {
     /// has at most one author, fixed by its first change. Changes an actor makes before you set an author
     /// stay without one.
     ///
+    /// The author isn't saved with the document. A new or loaded document has no author, so set it each
+    /// time you create or load one, before its first change.
+    ///
     /// Setting an author that differs from the current one, including `nil`, gives the document a new,
     /// random ``actor``, so the new author's changes start with a fresh actor. Setting the same author again
     /// changes nothing. Setting the author commits any pending changes first, with the previous author and
     /// actor.
     ///
     /// > Important: When you use authors, let the document choose its actors. If you set ``actor``
-    /// yourself, set it after the author and only to an actor that has never made a change, in this or any
-    /// other copy of the document. Automerge records nothing for an actor that has already made a change,
-    /// and reports no error, so its later changes keep its earlier author, or none, even though this
-    /// property returns the new one. Check ``author(for:)`` with the actor to see the author its changes
-    /// record.
+    /// yourself, set it after the author, and only to an actor that has never made a change in this or any
+    /// other copy of the document, or whose first change recorded this same author. Automerge records
+    /// nothing for an actor that has already made a change, and reports no error, so its later changes keep
+    /// its earlier author, or none, even though this property returns the new one. Check ``author(for:)``
+    /// with the actor to see the author its changes record.
     ///
     /// Author IDs are permanent: they're stored with the document's history and sent to every peer that
     /// receives it. Don't put personal information, such as an email address, in an author ID. Use an
@@ -107,9 +110,10 @@ public final class Document: @unchecked Sendable {
     /// The authors recorded in the document's changes, including those received from other peers, sorted by
     /// their bytes.
     ///
-    /// An author is listed once the first change of one of its actors is in the document. The current
-    /// ``author`` is listed once the document makes a change with it. Reading this property commits any
-    /// pending changes first, as ``heads()`` does.
+    /// This reads committed changes. An author is listed once the first change of one of its actors is
+    /// committed, so the current ``author`` appears after the document commits a change with it, for
+    /// example with ``commitWith(message:timestamp:)``, ``save()``, or ``heads()``, and not while that change
+    /// is still pending.
     public var authors: [AuthorId] {
         lock {
             self.doc.wrapErrors { $0.authors() }.map(AuthorId.init(ffi:))
@@ -120,9 +124,9 @@ public final class Document: @unchecked Sendable {
     ///
     /// - Parameter actor: The actor to look up.
     /// - Returns: The author of the actor's changes, or `nil` if the actor's first change recorded none or
-    /// isn't in the document.
+    /// hasn't been committed.
     ///
-    /// This commits any pending changes first, as ``heads()`` does.
+    /// Like ``authors``, this reads committed changes.
     public func author(for actor: ActorId) -> AuthorId? {
         lock {
             self.doc.wrapErrors { $0.authorForActor(actor: [UInt8](actor.data)) }.map(AuthorId.init(ffi:))
@@ -132,9 +136,10 @@ public final class Document: @unchecked Sendable {
     /// Returns the actors whose changes record the author you provide.
     ///
     /// - Parameter author: The author to look up.
-    /// - Returns: The actors with that author, or an empty array if no change in the document records it.
+    /// - Returns: The actors with that author, or an empty array if no committed change in the document
+    /// records it.
     ///
-    /// This commits any pending changes first, as ``heads()`` does.
+    /// Like ``authors``, this reads committed changes.
     public func actors(for author: AuthorId) -> [ActorId] {
         lock {
             self.doc.wrapErrors { $0.actorsForAuthor(author: [UInt8](author.data)) }.map(ActorId.init(ffi:))

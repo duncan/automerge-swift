@@ -68,7 +68,8 @@ jobs:
           swift test
 
   wasm:
-    runs-on: ubuntu-latest
+    # ubuntu-latest moved to 26.04, which setup-swift can't install Swift 6.2.3 on yet.
+    runs-on: ubuntu-24.04
     needs: automerge-dependencies
     steps:
       - uses: actions/checkout@v5

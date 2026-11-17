@@ -49,7 +49,7 @@ If you are editing the `Info.plist` file directly, the following stanza reflects
 
 Use ``Document/save()`` to generate `Data` that represents a compacted version of the Automerge document.
 Calling `save` collapses concurrent changes applied since the last save, or when the document was loaded.
-The compressed encoding of the document which is efficient and can be used to initialize an Automerge document with ``Document/init(_:logLevel:)``.
+The compressed encoding of the document which is efficient and can be used to initialize an Automerge document with ``Document/init(_:author:logLevel:)``.
 
 The Automerge core library is intentionally agnostic to how you transfer, store, or load the bytes that make up an Automerge document, or updates between documents.
 

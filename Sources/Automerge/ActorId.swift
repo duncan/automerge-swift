@@ -12,7 +12,8 @@ import Foundation
 /// happen.
 /// Because of this, Automerge recommends that you use the default ActorId that it provides.
 public struct ActorId: Equatable, Hashable, Sendable {
-    var data: Data
+    /// The bytes of the actor ID.
+    public let data: Data
 
     init(ffi: AutomergeUniffi.ActorId) {
         data = Data(ffi)

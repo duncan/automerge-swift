@@ -37,17 +37,20 @@ RUST_NIGHTLY="nightly-2025-11-18"
 echo "Install nightly and rust-src for Catalyst"
 rustup toolchain install ${RUST_NIGHTLY}
 rustup component add rust-src --toolchain ${RUST_NIGHTLY}
-rustup update
-rustup default ${RUST_NIGHTLY}
+
+# Every cargo and rustup call below uses the pinned nightly. Setting it for this
+# script alone, rather than with `rustup default`, leaves the machine's default
+# toolchain and the other installed toolchains as they were.
+export RUSTUP_TOOLCHAIN="${RUST_NIGHTLY}"
 
 echo "▸ Install toolchains"
-rustup target add x86_64-apple-ios # iOS Simulator (Intel)
-rustup target add aarch64-apple-ios-sim # iOS Simulator (M1)
-rustup target add aarch64-apple-ios # iOS Device
-rustup target add aarch64-apple-darwin # macOS ARM/M1
-rustup target add x86_64-apple-darwin # macOS Intel/x86
-rustup target add wasm32-wasip1 # WebAssembly
-rustup target add wasm32-wasip1-threads # WebAssembly with native multi threading capabilities
+rustup target add --toolchain ${RUST_NIGHTLY} x86_64-apple-ios # iOS Simulator (Intel)
+rustup target add --toolchain ${RUST_NIGHTLY} aarch64-apple-ios-sim # iOS Simulator (M1)
+rustup target add --toolchain ${RUST_NIGHTLY} aarch64-apple-ios # iOS Device
+rustup target add --toolchain ${RUST_NIGHTLY} aarch64-apple-darwin # macOS ARM/M1
+rustup target add --toolchain ${RUST_NIGHTLY} x86_64-apple-darwin # macOS Intel/x86
+rustup target add --toolchain ${RUST_NIGHTLY} wasm32-wasip1 # WebAssembly
+rustup target add --toolchain ${RUST_NIGHTLY} wasm32-wasip1-threads # WebAssembly with native multi threading capabilities
 cargo_build="cargo build --manifest-path $RUST_FOLDER/Cargo.toml"
 cargo_build_nightly="cargo +${RUST_NIGHTLY} build --manifest-path $RUST_FOLDER/Cargo.toml"
 cargo_build_nightly_with_std="cargo -Zbuild-std build --manifest-path $RUST_FOLDER/Cargo.toml"

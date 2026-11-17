@@ -4,12 +4,9 @@
 # which was written by Joseph Heck and  Aidar Nugmanoff and licensed under the
 # MIT license. We have made some slight naming changes
 
-# currently macabi/Catalyst target has no prebuild rust-std library hence we use `-Z build-std`
-# how to build-std: https://doc.rust-lang.org/nightly/cargo/reference/unstable.html#build-std
-# list of targets with prebuild rust-std https://doc.rust-lang.org/nightly/rustc/platform-support.html
-
-# WARNING this build script to work requires pinned rust version due a known issue with Catalyst build
-# that was later introduced https://github.com/rust-lang/rust/issues/106021
+# Every target below ships a prebuilt standard library with stable Rust, including Mac Catalyst
+# (macabi) and visionOS, which once needed a nightly toolchain and `-Z build-std`.
+# Targets with a prebuilt standard library: https://doc.rust-lang.org/rustc/platform-support.html
 
 # bash "strict" mode
 # https://gist.github.com/mohanpedala/1e2ff5661761d3abd0385e8223e16425
@@ -27,33 +24,30 @@ BUILD_FOLDER="$RUST_FOLDER/target"
 
 XCFRAMEWORK_FOLDER="$THIS_SCRIPT_DIR/../${FRAMEWORK_NAME}.xcframework"
 
-# The specific issue with an earlier nightly version and linking into an
-# XCFramework appears to be resolved with latest versions of +nightly toolchain
-# (as of 10/10/23), but leaving it open to float seems less useful than
-# moving the pinning forward, since Catalyst support (target macabi) still
-# requires an active, nightly toolchain.
-RUST_NIGHTLY="nightly-2025-11-18"
+# The Rust release that builds the library, pinned so every build uses the same compiler.
+RUST_TOOLCHAIN="1.100.0"
 
-echo "Install nightly and rust-src for Catalyst"
-rustup toolchain install ${RUST_NIGHTLY}
-rustup component add rust-src --toolchain ${RUST_NIGHTLY}
+echo "▸ Install Rust ${RUST_TOOLCHAIN}"
+rustup toolchain install ${RUST_TOOLCHAIN} --profile minimal --no-self-update
 
-# Every cargo and rustup call below uses the pinned nightly. Setting it for this
+# Every cargo and rustup call below uses the pinned toolchain. Setting it for this
 # script alone, rather than with `rustup default`, leaves the machine's default
 # toolchain and the other installed toolchains as they were.
-export RUSTUP_TOOLCHAIN="${RUST_NIGHTLY}"
+export RUSTUP_TOOLCHAIN="${RUST_TOOLCHAIN}"
 
-echo "▸ Install toolchains"
-rustup target add --toolchain ${RUST_NIGHTLY} x86_64-apple-ios # iOS Simulator (Intel)
-rustup target add --toolchain ${RUST_NIGHTLY} aarch64-apple-ios-sim # iOS Simulator (M1)
-rustup target add --toolchain ${RUST_NIGHTLY} aarch64-apple-ios # iOS Device
-rustup target add --toolchain ${RUST_NIGHTLY} aarch64-apple-darwin # macOS ARM/M1
-rustup target add --toolchain ${RUST_NIGHTLY} x86_64-apple-darwin # macOS Intel/x86
-rustup target add --toolchain ${RUST_NIGHTLY} wasm32-wasip1 # WebAssembly
-rustup target add --toolchain ${RUST_NIGHTLY} wasm32-wasip1-threads # WebAssembly with native multi threading capabilities
+echo "▸ Install targets"
+rustup target add --toolchain ${RUST_TOOLCHAIN} x86_64-apple-ios # iOS Simulator (Intel)
+rustup target add --toolchain ${RUST_TOOLCHAIN} aarch64-apple-ios-sim # iOS Simulator (M1)
+rustup target add --toolchain ${RUST_TOOLCHAIN} aarch64-apple-ios # iOS Device
+rustup target add --toolchain ${RUST_TOOLCHAIN} aarch64-apple-darwin # macOS ARM/M1
+rustup target add --toolchain ${RUST_TOOLCHAIN} x86_64-apple-darwin # macOS Intel/x86
+rustup target add --toolchain ${RUST_TOOLCHAIN} aarch64-apple-ios-macabi # Mac Catalyst (Apple silicon)
+rustup target add --toolchain ${RUST_TOOLCHAIN} x86_64-apple-ios-macabi # Mac Catalyst (Intel)
+rustup target add --toolchain ${RUST_TOOLCHAIN} aarch64-apple-visionos # visionOS Device
+rustup target add --toolchain ${RUST_TOOLCHAIN} aarch64-apple-visionos-sim # visionOS Simulator
+rustup target add --toolchain ${RUST_TOOLCHAIN} wasm32-wasip1 # WebAssembly
+rustup target add --toolchain ${RUST_TOOLCHAIN} wasm32-wasip1-threads # WebAssembly with native multi threading capabilities
 cargo_build="cargo build --manifest-path $RUST_FOLDER/Cargo.toml"
-cargo_build_nightly="cargo +${RUST_NIGHTLY} build --manifest-path $RUST_FOLDER/Cargo.toml"
-cargo_build_nightly_with_std="cargo -Zbuild-std build --manifest-path $RUST_FOLDER/Cargo.toml"
 
 
 echo "▸ Clean state"
@@ -82,11 +76,11 @@ $cargo_build --target aarch64-apple-ios --locked --release
 
 echo "▸ Building for aarch64-apple-visionos-sim"
 CFLAGS_aarch64_apple_visionos="-target aarch64-apple-visionos-sim" \
-$cargo_build_nightly_with_std --target aarch64-apple-visionos-sim --locked --release
+$cargo_build --target aarch64-apple-visionos-sim --locked --release
 
 echo "▸ Building for aarch64-apple-visionos"
 CFLAGS_aarch64_apple_visionos="-target aarch64-apple-visionos" \
-$cargo_build_nightly_with_std --target aarch64-apple-visionos --locked --release
+$cargo_build --target aarch64-apple-visionos --locked --release
 
 echo "▸ Building for aarch64-apple-darwin"
 CFLAGS_aarch64_apple_darwin="-target aarch64-apple-darwin" \
@@ -97,10 +91,10 @@ CFLAGS_x86_64_apple_darwin="-target x86_64-apple-darwin" \
 $cargo_build --target x86_64-apple-darwin --locked --release
 
 echo "▸ Building for aarch64-apple-ios-macabi"
-$cargo_build_nightly -Z build-std --target aarch64-apple-ios-macabi --locked --release
+$cargo_build --target aarch64-apple-ios-macabi --locked --release
 
 echo "▸ Building for x86_64-apple-ios-macabi"
-$cargo_build_nightly -Z build-std --target x86_64-apple-ios-macabi --locked --release
+$cargo_build --target x86_64-apple-ios-macabi --locked --release
 
 echo "▸ Building for WASM"
 $cargo_build --target wasm32-wasip1 --locked --release

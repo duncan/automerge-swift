@@ -12,6 +12,9 @@
 
 - ``actor``
 - ``ActorId``
+- ``objectType(obj:)``
+- ``path(obj:)``
+- ``lookupPath(path:)``
 
 ### Attributing changes to authors
 
@@ -20,9 +23,6 @@
 - ``authors``
 - ``author(for:)``
 - ``actors(for:)``
-- ``objectType(obj:)``
-- ``path(obj:)``
-- ``lookupPath(path:)``
 
 ### Reading maps
 

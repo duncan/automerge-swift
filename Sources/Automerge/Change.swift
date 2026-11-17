@@ -1,4 +1,4 @@
-import struct AutomergeUniffi.Change
+import AutomergeUniffi
 import Foundation
 
 typealias FfiChange = AutomergeUniffi.Change
@@ -22,6 +22,19 @@ public struct Change: Equatable {
     public let bytes: Data
     /// The identity of the change, its hash.
     public let hash: ChangeHash
+
+    /// Creates a change by decoding the bytes of an encoded change.
+    ///
+    /// Use this to inspect a change you've received before applying it, for example to check who made it.
+    /// The bytes are those of a single change, as ``bytes`` provides.
+    ///
+    /// - Parameter bytes: The encoded bytes of one change.
+    /// - Throws: ``DecodeChangeError`` if the bytes aren't a valid change.
+    public init(bytes: Data) throws {
+        self.init(try wrappedErrors(unexpected: .decodeChange) {
+            try AutomergeUniffi.decodeChange(bytes: Array(bytes))
+        })
+    }
 
     init(_ ffi: FfiChange) {
         actorId = ActorId(ffi: ffi.actorId)

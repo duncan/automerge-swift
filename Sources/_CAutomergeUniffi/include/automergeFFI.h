@@ -324,9 +324,19 @@ RustBuffer uniffi_uniffi_automerge_fn_method_doc_authors(uint64_t ptr, RustCallS
 RustBuffer uniffi_uniffi_automerge_fn_method_doc_change_by_hash(uint64_t ptr, RustBuffer hash, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_CHANGE_METADATA_BY_HASH
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_CHANGE_METADATA_BY_HASH
+RustBuffer uniffi_uniffi_automerge_fn_method_doc_change_metadata_by_hash(uint64_t ptr, RustBuffer hash, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_CHANGES
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_CHANGES
 RustBuffer uniffi_uniffi_automerge_fn_method_doc_changes(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_CHANGES_METADATA
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_CHANGES_METADATA
+RustBuffer uniffi_uniffi_automerge_fn_method_doc_changes_metadata(uint64_t ptr, RustBuffer heads, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_COMMIT_WITH
@@ -494,6 +504,11 @@ RustBuffer uniffi_uniffi_automerge_fn_method_doc_insert_object_in_list(uint64_t 
 void uniffi_uniffi_automerge_fn_method_doc_join_block(uint64_t ptr, RustBuffer obj, uint64_t index, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_LAST_LOCAL_CHANGE
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_LAST_LOCAL_CHANGE
+RustBuffer uniffi_uniffi_automerge_fn_method_doc_last_local_change(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_LENGTH
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_LENGTH
 uint64_t uniffi_uniffi_automerge_fn_method_doc_length(uint64_t ptr, RustBuffer obj, RustCallStatus *_Nonnull out_status
@@ -552,6 +567,11 @@ void uniffi_uniffi_automerge_fn_method_doc_merge(uint64_t ptr, uint64_t other, R
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_MERGE_WITH_PATCHES
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_MERGE_WITH_PATCHES
 RustBuffer uniffi_uniffi_automerge_fn_method_doc_merge_with_patches(uint64_t ptr, uint64_t other, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_MISSING_DEPS
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_MISSING_DEPS
+RustBuffer uniffi_uniffi_automerge_fn_method_doc_missing_deps(uint64_t ptr, RustBuffer heads, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_DOC_OBJECT_TYPE
@@ -708,6 +728,11 @@ void uniffi_uniffi_automerge_fn_method_syncstate_reset(uint64_t ptr, RustCallSta
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_SYNCSTATE_THEIR_HEADS
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_METHOD_SYNCSTATE_THEIR_HEADS
 RustBuffer uniffi_uniffi_automerge_fn_method_syncstate_their_heads(uint64_t ptr, RustCallStatus *_Nonnull out_status
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_FUNC_DECODE_CHANGE
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_FUNC_DECODE_CHANGE
+RustBuffer uniffi_uniffi_automerge_fn_func_decode_change(RustBuffer bytes, RustCallStatus *_Nonnull out_status
 );
 #endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_FN_FUNC_ROOT
@@ -976,6 +1001,12 @@ void ffi_uniffi_automerge_rust_future_free_void(uint64_t handle
 void ffi_uniffi_automerge_rust_future_complete_void(uint64_t handle, RustCallStatus *_Nonnull out_status
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_FUNC_DECODE_CHANGE
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_FUNC_DECODE_CHANGE
+uint16_t uniffi_uniffi_automerge_checksum_func_decode_change(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_FUNC_ROOT
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_FUNC_ROOT
 uint16_t uniffi_uniffi_automerge_checksum_func_root(void
@@ -1030,9 +1061,21 @@ uint16_t uniffi_uniffi_automerge_checksum_method_doc_change_by_hash(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_CHANGE_METADATA_BY_HASH
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_CHANGE_METADATA_BY_HASH
+uint16_t uniffi_uniffi_automerge_checksum_method_doc_change_metadata_by_hash(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_CHANGES
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_CHANGES
 uint16_t uniffi_uniffi_automerge_checksum_method_doc_changes(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_CHANGES_METADATA
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_CHANGES_METADATA
+uint16_t uniffi_uniffi_automerge_checksum_method_doc_changes_metadata(void
     
 );
 #endif
@@ -1234,6 +1277,12 @@ uint16_t uniffi_uniffi_automerge_checksum_method_doc_join_block(void
     
 );
 #endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_LAST_LOCAL_CHANGE
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_LAST_LOCAL_CHANGE
+uint16_t uniffi_uniffi_automerge_checksum_method_doc_last_local_change(void
+    
+);
+#endif
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_LENGTH
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_LENGTH
 uint16_t uniffi_uniffi_automerge_checksum_method_doc_length(void
@@ -1303,6 +1352,12 @@ uint16_t uniffi_uniffi_automerge_checksum_method_doc_merge(void
 #ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_MERGE_WITH_PATCHES
 #define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_MERGE_WITH_PATCHES
 uint16_t uniffi_uniffi_automerge_checksum_method_doc_merge_with_patches(void
+    
+);
+#endif
+#ifndef UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_MISSING_DEPS
+#define UNIFFI_FFIDEF_UNIFFI_UNIFFI_AUTOMERGE_CHECKSUM_METHOD_DOC_MISSING_DEPS
+uint16_t uniffi_uniffi_automerge_checksum_method_doc_missing_deps(void
     
 );
 #endif

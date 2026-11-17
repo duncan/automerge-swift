@@ -104,6 +104,10 @@
 - ``heads()``
 - ``getHistory()``
 - ``change(hash:)``
+- ``changeMetadata(hash:)``
+- ``changeMetadata(since:)``
+- ``lastLocalChange()``
+- ``missingDependencies(heads:)``
 - ``difference(from:to:)``
 - ``difference(since:)``
 - ``difference(to:)``

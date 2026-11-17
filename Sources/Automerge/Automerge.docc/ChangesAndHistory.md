@@ -17,6 +17,7 @@ The set of `ChangeHash` that Automerge returns represent a discrete point in tim
 `Document` includes families of methods that accept `[ChangeHash]` to retrieve values or objects from that point in time.
 
 Each ``Change`` carries the time it was made, an optional message, and the actor that made it.
+To describe a document's history without reading the encoded bytes of every change, use ``Document/changeMetadata(since:)``, which returns a ``ChangeMetadata`` for each change.
 To also record who made a change, give the document an author.
 
 ### Authors and actors

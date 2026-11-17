@@ -2,6 +2,10 @@
 
 ## Topics
 
+### Decoding a Change
+
+- ``Change/init(bytes:)``
+
 ### Inspecting a Change
 
 - ``Change/hash``

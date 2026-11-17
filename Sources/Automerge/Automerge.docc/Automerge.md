@@ -89,6 +89,7 @@ Read <doc:FiveMinuteQuickstart> to get a quick taste of how to use Automerge, or
 - <doc:ChangesAndHistory>
 - ``Automerge/ChangeHash``
 - ``Automerge/Change``
+- ``Automerge/ChangeMetadata``
 - ``Automerge/Patch``
 - ``Automerge/PatchAction``
 - ``Automerge/PathElement``
@@ -109,6 +110,7 @@ Read <doc:FiveMinuteQuickstart> to get a quick taste of how to use Automerge, or
 
 ### Document Errors 
 
+- ``Automerge/DecodeChangeError``
 - ``Automerge/DecodeSyncStateError``
 - ``Automerge/DocError``
 - ``Automerge/LoadError``

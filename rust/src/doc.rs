@@ -5,7 +5,7 @@ use automerge::{self as am, sync::SyncDoc, CursorPosition};
 use automerge::{transaction::Transactable, ReadDoc};
 
 use crate::actor_id::ActorId;
-use crate::cursor::Position;
+use crate::cursor::{MoveCursor, Position};
 use crate::element_id::ElementId;
 use crate::mark::{ExpandMark, KeyValue, Mark};
 use crate::patches::Patch;
@@ -13,7 +13,8 @@ use crate::span::{hydrated_map, map_into_hydrate, HydratedValue, Span};
 use crate::text_encoding::TextEncoding;
 
 use crate::{
-    Change, ChangeHash, ChangeMetadata, Cursor, ObjId, ObjType, PathElement, ScalarValue, SyncState, Value,
+    Change, ChangeHash, ChangeMetadata, Cursor, ObjId, ObjType, PathElement, ScalarValue,
+    SyncState, Value,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -402,7 +403,12 @@ impl Doc {
         doc.object_type(obj).unwrap().into()
     }
 
-    pub fn cursor(&self, obj: ObjId, position: u64) -> Result<Cursor, DocError> {
+    pub fn cursor(
+        &self,
+        obj: ObjId,
+        position: u64,
+        move_cursor: MoveCursor,
+    ) -> Result<Cursor, DocError> {
         let obj = am::ObjId::from(obj);
         let doc = crate::lock::read(&self.0);
         let index = to_index(position);
@@ -411,7 +417,7 @@ impl Doc {
         } else {
             CursorPosition::Index(index)
         };
-        doc.get_cursor(&obj, position, None)
+        doc.get_cursor_moving(&obj, position, None, move_cursor.into())
             .map(|c| c.into())
             .map_err(|error| DocError::Internal(error))
     }
@@ -421,6 +427,7 @@ impl Doc {
         obj: ObjId,
         position: u64,
         heads: Vec<ChangeHash>,
+        move_cursor: MoveCursor,
     ) -> Result<Cursor, DocError> {
         let obj = am::ObjId::from(obj);
         let doc = crate::lock::read(&self.0);
@@ -436,7 +443,7 @@ impl Doc {
         } else {
             CursorPosition::Index(index)
         };
-        doc.get_cursor(&obj, cursor_position, Some(&heads))
+        doc.get_cursor_moving(&obj, cursor_position, Some(&heads), move_cursor.into())
             .map(|c| c.into())
             .map_err(|error| DocError::Internal(error))
     }
@@ -601,6 +608,26 @@ impl Doc {
         Ok(())
     }
 
+    pub fn unmark(
+        &self,
+        obj: ObjId,
+        start: u64,
+        end: u64,
+        expand: ExpandMark,
+        name: String,
+    ) -> Result<(), DocError> {
+        let obj = am::ObjId::from(obj);
+        let mut doc = crate::lock::write(&self.0);
+        assert_text(&*doc, &obj)?;
+        // Check the range first, for the same reasons as in `mark`.
+        let length = doc.length(&obj) as u64;
+        if let Some(out_of_bounds) = [start, end].into_iter().find(|&index| index > length) {
+            return Err(am::AutomergeError::InvalidIndex(to_index(out_of_bounds)).into());
+        }
+        doc.unmark(obj, &name, to_index(start), to_index(end), expand.into())?;
+        Ok(())
+    }
+
     pub fn marks(&self, obj: ObjId) -> Result<Vec<Mark>, DocError> {
         let obj = am::ObjId::from(obj);
         let doc = crate::lock::write(&self.0);
@@ -696,6 +723,29 @@ impl Doc {
         let id = doc.replace_block(obj, index as usize)?;
         doc.update_object(&id, &block).map_err(DocError::from)?;
         Ok(id.into())
+    }
+
+    pub fn update_spans(
+        &self,
+        obj: ObjId,
+        spans: Vec<Span>,
+        default_expand: ExpandMark,
+        per_mark_expands: HashMap<String, ExpandMark>,
+    ) -> Result<(), DocError> {
+        let mut doc = crate::lock::write(&self.0);
+        let obj = am::ObjId::from(obj);
+        assert_text(&*doc, &obj)?;
+        let encoding = doc.text_encoding();
+        let config = per_mark_expands.into_iter().fold(
+            am::marks::UpdateSpansConfig::default().with_default_expand(default_expand.into()),
+            |config, (name, expand)| config.with_mark_expand(name, expand.into()),
+        );
+        let spans = spans
+            .into_iter()
+            .map(|span| span.into_core(encoding))
+            .collect::<Vec<_>>();
+        doc.update_spans(obj, config, spans)?;
+        Ok(())
     }
 
     pub fn get_block(

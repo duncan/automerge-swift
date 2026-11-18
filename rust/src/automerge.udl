@@ -97,6 +97,11 @@ interface Prop {
     Index( u64 value );
 };
 
+enum MoveCursor {
+    "Before",
+    "After",
+};
+
 enum ExpandMark {
     "Before",
     "After",
@@ -232,6 +237,8 @@ interface Doc {
     [Throws=DocError]
     void mark(ObjId obj, u64 start, u64 end, ExpandMark expand, string name, ScalarValue value);
     [Throws=DocError]
+    void unmark(ObjId obj, u64 start, u64 end, ExpandMark expand, string name);
+    [Throws=DocError]
     sequence<Mark> marks(ObjId obj);
     [Throws=DocError]
     sequence<Mark> marks_at(ObjId obj, sequence<ChangeHash> heads);
@@ -246,6 +253,8 @@ interface Doc {
     void join_block(ObjId obj, u64 index);
     [Throws=DocError]
     ObjId update_block(ObjId obj, u64 index, record<string, HydratedValue> block);
+    [Throws=DocError]
+    void update_spans(ObjId obj, sequence<Span> spans, ExpandMark default_expand, record<string, ExpandMark> per_mark_expands);
     [Throws=DocError]
     record<string, HydratedValue>? get_block(ObjId obj, u64 index);
     [Throws=DocError]
@@ -347,9 +356,9 @@ interface Doc {
     sequence<Patch> apply_encoded_changes_with_patches(sequence<u8> changes);
 
     [Throws=DocError]
-    Cursor cursor(ObjId obj, u64 position);
+    Cursor cursor(ObjId obj, u64 position, MoveCursor move_cursor);
     [Throws=DocError]
-    Cursor cursor_at(ObjId obj, u64 position, sequence<ChangeHash> heads);
+    Cursor cursor_at(ObjId obj, u64 position, sequence<ChangeHash> heads, MoveCursor move_cursor);
     [Throws=DocError]
     u64 cursor_position(ObjId obj, Cursor cursor);
     [Throws=DocError]

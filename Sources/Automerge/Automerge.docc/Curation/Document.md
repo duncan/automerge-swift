@@ -70,6 +70,7 @@
 - ``spliceText(obj:start:delete:value:)``
 - ``updateText(obj:value:)``
 - ``mark(obj:start:end:expand:name:value:)``
+- ``unmark(obj:start:end:expand:name:)``
 
 ### Reading and updating rich text blocks
 
@@ -79,11 +80,14 @@
 - ``splitBlock(obj:index:block:)``
 - ``joinBlock(obj:index:)``
 - ``updateBlock(obj:index:block:)``
+- ``updateSpans(obj:spans:defaultExpand:expandByMark:)``
 
 ### Setting and Reading cursors
 
 - ``cursor(obj:position:)``
 - ``cursor(obj:position:heads:)``
+- ``cursor(obj:position:move:)``
+- ``cursor(obj:position:heads:move:)``
 - ``position(obj:cursor:)``
 - ``position(obj:cursor:heads:)``
 

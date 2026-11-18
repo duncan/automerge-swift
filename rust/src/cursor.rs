@@ -7,6 +7,21 @@ pub enum Position {
     Index { position: u64 },
 }
 
+/// Where a cursor goes when the element it refers to is deleted. Mirrors `automerge::MoveCursor`.
+pub enum MoveCursor {
+    Before,
+    After,
+}
+
+impl From<MoveCursor> for am::MoveCursor {
+    fn from(value: MoveCursor) -> Self {
+        match value {
+            MoveCursor::Before => am::MoveCursor::Before,
+            MoveCursor::After => am::MoveCursor::After,
+        }
+    }
+}
+
 impl From<Cursor> for am::Cursor {
     fn from(value: Cursor) -> Self {
         // Can't fail: Swift can't create a Cursor or decode one from data, so its bytes always come

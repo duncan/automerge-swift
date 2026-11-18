@@ -13,7 +13,8 @@ use crate::span::{hydrated_map, map_into_hydrate, HydratedValue, Span};
 use crate::text_encoding::TextEncoding;
 
 use crate::{
-    Change, ChangeHash, ChangeMetadata, Cursor, ObjId, ObjType, PathElement, ScalarValue, SyncState, Value,
+    Change, ChangeHash, ChangeMetadata, Cursor, ObjId, ObjType, PathElement, ScalarValue,
+    SyncState, Value,
 };
 
 #[derive(Debug, thiserror::Error)]
